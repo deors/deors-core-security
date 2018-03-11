@@ -39,11 +39,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import deors.core.commons.StringToolkit;
+import deors.core.commons.io.IOToolkit;
 
 public class CryptoToolkitTestCase {
 
-    private static final String NEW_LINE = System.getProperty("line.separator");
-    private static final String WIN_NEW_LINE = "\r\n";
+    private static final String NEW_LINE = "\n";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -78,19 +78,16 @@ public class CryptoToolkitTestCase {
     public void testCalculateHash()
         throws IOException, NoSuchAlgorithmException {
 
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
         InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        byte[] hash = CryptoToolkit.calculateHash(is);
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
+
+        byte[] hash = CryptoToolkit.calculateHash(bais);
         assertNotNull(hash);
-        byte[] expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = new byte[] {
-                54, 16, 65, -53, 72, -47, -125, -111, 87, 59, 42, 54, 44, -121, 49, 55
-            };
-        } else {
-                expected = new byte[] {
-                        -30, -83, 32, -36, -2, -93, -1, 45, 99, -101, -36, -11, -46, 54, -25, -95
-            };
-        }
+        byte[] expected = new byte[] {112, 17, -103, 17, 124, 30, -87, 21, -91, 5, -114, 17, -95, 126, -28, -69};
         assertArrayEquals(expected, hash);
     }
 
@@ -98,21 +95,19 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashAlternate()
         throws IOException, NoSuchAlgorithmException {
 
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
         InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        byte[] hash = CryptoToolkit.calculateHash(is, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
+
+        byte[] hash = CryptoToolkit.calculateHash(bais, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
         assertNotNull(hash);
-        byte[] expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = new byte[] {
-                -97, 91, -72, -127, -33, 76, 6, 89, -100, -15,
-                -110, 26, -34, 41, 9, 22, 109, 16, 60, -2
-            };
-        } else {
-                expected = new byte[] {
-                        -114, 109, -119, -54, -127, -84, 99, -76, -108,
-                        19, -118, 22, 86, 52, -46, -21, -28, 19, 2, -29
-            };
-        }
+        byte[] expected = new byte[] {
+            126, 105, 119, -97, 127, -38, -116, 79, -119, -116,
+            25, 64, 122, 119, 11, 67, -55, 83, -105, 58
+        };
         assertArrayEquals(expected, hash);
     }
 
@@ -139,20 +134,16 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashFile()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
+        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
+
         byte[] hash = CryptoToolkit.calculateHash(f);
         assertNotNull(hash);
-        byte[] expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-            expected = new byte[] {
-                54, 16, 65, -53, 72, -47, -125, -111, 87, 59, 42, 54, 44, -121, 49, 55
-            };
-        } else {
-            expected = new byte[] {
-                    -30, -83, 32, -36, -2, -93, -1, 45, 99, -101, -36, -11, -46, 54, -25, -95
-            };
-        }
+        byte[] expected = new byte[] {112, 17, -103, 17, 124, 30, -87, 21, -91, 5, -114, 17, -95, 126, -28, -69};
         assertArrayEquals(expected, hash);
     }
 
@@ -160,22 +151,19 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashFileAlternate()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
+        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
+
         byte[] hash = CryptoToolkit.calculateHash(f, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
         assertNotNull(hash);
-        byte[] expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = new byte[] {
-                -97, 91, -72, -127, -33, 76, 6, 89, -100, -15,
-                -110, 26, -34, 41, 9, 22, 109, 16, 60, -2
-            };
-        } else {
-                expected = new byte[] {
-                        -114, 109, -119, -54, -127, -84, 99, -76, -108,
-                    19, -118, 22, 86, 52, -46, -21, -28, 19, 2, -29
-                };
-        }
+        byte[] expected = new byte[] {
+            126, 105, 119, -97, 127, -38, -116, 79, -119, -116,
+            25, 64, 122, 119, 11, 67, -55, 83, -105, 58
+        };
 
         assertArrayEquals(expected, hash);
     }
@@ -204,16 +192,16 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashString()
         throws IOException, NoSuchAlgorithmException {
 
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
         InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        String hash = CryptoToolkit.calculateHashString(is);
-        assertNotNull(hash);
-        String expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = "361041CB48D18391573B2A362C873137";
-        } else {
-                expected = "E2AD20DCFEA3FF2D639BDCF5D236E7A1";
-        }
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
 
+        String hash = CryptoToolkit.calculateHashString(bais);
+        assertNotNull(hash);
+        String expected = "701199117C1EA915A5058E11A17EE4BB";
         assertEquals(expected, hash);
     }
 
@@ -221,15 +209,16 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashStringAlternate()
         throws IOException, NoSuchAlgorithmException {
 
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
         InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        String hash = CryptoToolkit.calculateHashString(is, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
+
+        String hash = CryptoToolkit.calculateHashString(bais, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
         assertNotNull(hash);
-        String expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = "9F5BB881DF4C06599CF1921ADE2909166D103CFE";
-        } else {
-                expected = "8E6D89CA81AC63B494138A165634D2EBE41302E3";
-        }
+        String expected = "7E69779F7FDA8C4F898C19407A770B43C953973A";
         assertEquals(expected, hash);
     }
 
@@ -256,16 +245,16 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashStringFile()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
+        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
+
         String hash = CryptoToolkit.calculateHashString(f);
         assertNotNull(hash);
-        String expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-            expected = "361041CB48D18391573B2A362C873137";
-        } else {
-            expected = "E2AD20DCFEA3FF2D639BDCF5D236E7A1";
-        }
+        String expected = "701199117C1EA915A5058E11A17EE4BB";
         assertEquals(expected, hash);
     }
 
@@ -273,16 +262,16 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashStringFileAlternate()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
+        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
+
         String hash = CryptoToolkit.calculateHashString(f, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
         assertNotNull(hash);
-        String expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = "9F5BB881DF4C06599CF1921ADE2909166D103CFE";
-        } else {
-                expected = "8E6D89CA81AC63B494138A165634D2EBE41302E3";
-        }
+        String expected = "7E69779F7FDA8C4F898C19407A770B43C953973A";
         assertEquals(expected, hash);
     }
 

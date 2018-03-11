@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -24,6 +23,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertStoreException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
@@ -37,10 +37,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import deors.core.commons.StringToolkit;
+import deors.core.commons.io.IOToolkit;
+
 public class CryptoSessionTestCase {
 
-    private static final String NEW_LINE = System.getProperty("line.separator");
-    private static final String WIN_NEW_LINE = "\r\n";
+    private static final String NEW_LINE = "\n";
 
     private CryptoSession session = new CryptoSession();
 
@@ -249,19 +251,16 @@ public class CryptoSessionTestCase {
     public void testCalculateHash()
         throws IOException, NoSuchAlgorithmException {
 
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
         InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        byte[] hash = session.calculateHash(is);
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
+
+        byte[] hash = session.calculateHash(bais);
         assertNotNull(hash);
-        byte[] expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-            expected = new byte[] {
-                54, 16, 65, -53, 72, -47, -125, -111, 87, 59, 42, 54, 44, -121, 49, 55
-            };
-        } else {
-            expected = new byte[] {
-                    -30, -83, 32, -36, -2, -93, -1, 45, 99, -101, -36, -11, -46, 54, -25, -95
-            };
-        }
+        byte[] expected = new byte[] {112, 17, -103, 17, 124, 30, -87, 21, -91, 5, -114, 17, -95, 126, -28, -69};
         assertArrayEquals(expected, hash);
     }
 
@@ -278,22 +277,16 @@ public class CryptoSessionTestCase {
     public void testCalculateHashFile()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
+        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
+
         byte[] hash = session.calculateHash(f);
         assertNotNull(hash);
-        byte[] expected;
-
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-                expected = new byte[] {
-                    54, 16, 65, -53, 72, -47, -125, -111, 87, 59, 42, 54, 44, -121, 49, 55
-            };
-        } else {
-                expected = new byte[] {
-                        -30, -83, 32, -36, -2, -93, -1, 45, 99, -101, -36, -11, -46, 54, -25, -95
-                    };
-        }
-
+        byte[] expected = new byte[] {112, 17, -103, 17, 124, 30, -87, 21, -91, 5, -114, 17, -95, 126, -28, -69};
         assertArrayEquals(expected, hash);
     }
 
@@ -310,16 +303,16 @@ public class CryptoSessionTestCase {
     public void testCalculateHashString()
         throws IOException, NoSuchAlgorithmException {
 
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
         InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        String hash = session.calculateHashString(is);
-        assertNotNull(hash);
-        String expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE)) {
-            expected = "361041CB48D18391573B2A362C873137";
-        } else {
-                expected = "E2AD20DCFEA3FF2D639BDCF5D236E7A1";
-        }
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
 
+        String hash = session.calculateHashString(bais);
+        assertNotNull(hash);
+        String expected = "701199117C1EA915A5058E11A17EE4BB";
         assertEquals(expected, hash);
     }
 
@@ -336,16 +329,16 @@ public class CryptoSessionTestCase {
     public void testCalculateHashStringFile()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
+        // text files might have different line endings depending on Git configuration
+        // normalize to Linux line endings
+        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+        List<String> strings = IOToolkit.readTextStream(is);
+        String combined = StringToolkit.combine(strings, NEW_LINE);
+        File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
+
         String hash = session.calculateHashString(f);
         assertNotNull(hash);
-        String expected;
-        if (NEW_LINE.equals(WIN_NEW_LINE))
-                expected = "361041CB48D18391573B2A362C873137";
-        else
-                expected = "E2AD20DCFEA3FF2D639BDCF5D236E7A1";
-
+        String expected = "701199117C1EA915A5058E11A17EE4BB";
         assertEquals(expected, hash);
     }
 
