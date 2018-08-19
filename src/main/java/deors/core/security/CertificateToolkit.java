@@ -39,37 +39,31 @@ public final class CertificateToolkit {
     /**
      * The SubjectAlternativeNames extension OID.
      */
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final String OID_EXTENSION_SUBJECT_ALTERNATIVE_NAMES = "2.5.29.17"; //$NON-NLS-1$
 
     /**
      * The CRLDistributionPoints extension OID.
      */
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     private static final String OID_EXTENSION_CRL_DISTRIBUTION_POINTS = "2.5.29.31"; //$NON-NLS-1$
 
     /**
      * The X.500 common name (CN) attribute OID.
      */
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public static final String OID_X500_CN = "2.5.4.3"; //$NON-NLS-1$
 
     /**
      * The X.500 country (C) attribute OID.
      */
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public static final String OID_X500_C = "2.5.4.6"; //$NON-NLS-1$
 
     /**
      * The X.500 organization (O) attribute OID.
      */
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public static final String OID_X500_O = "2.5.4.10"; //$NON-NLS-1$
 
     /**
      * The X.500 organizational unit (OU) attribute OID.
      */
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public static final String OID_X500_OU = "2.5.4.11"; //$NON-NLS-1$
 
     /**
