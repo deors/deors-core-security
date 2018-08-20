@@ -1,13 +1,17 @@
 package deors.core.security;
 
-import static org.easymock.EasyMock.createMock;
 import static org.junit.Assert.assertEquals;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import mockit.Mocked;
+import mockit.integration.junit4.JMockit;
+
+@RunWith(JMockit.class)
 public class KeyStoreEntryTestCase {
 
     public KeyStoreEntryTestCase() {
@@ -16,10 +20,7 @@ public class KeyStoreEntryTestCase {
     }
 
     @Test
-    public void testDefaultConstructorGettersAndSetters() {
-
-        X509Certificate cert = createMock(X509Certificate.class);
-        PrivateKey key = createMock(PrivateKey.class);
+    public void testDefaultConstructorGettersAndSetters(@Mocked X509Certificate cert, @Mocked PrivateKey key) {
 
         KeyStoreEntry kse = new KeyStoreEntry();
 
@@ -33,10 +34,7 @@ public class KeyStoreEntryTestCase {
     }
 
     @Test
-    public void testConstructorAll() {
-
-        X509Certificate cert = createMock(X509Certificate.class);
-        PrivateKey key = createMock(PrivateKey.class);
+    public void testConstructorAll(@Mocked X509Certificate cert, @Mocked PrivateKey key) {
 
         KeyStoreEntry kse = new KeyStoreEntry("alias", cert, key);
 

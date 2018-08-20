@@ -1,14 +1,9 @@
 package deors.core.security;
 
-import static org.easymock.EasyMock.capture;
-import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -22,12 +17,16 @@ import javax.activation.CommandMap;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
-import org.easymock.Capture;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import mockit.Mocked;
+import mockit.Verifications;
+import mockit.integration.junit4.JMockit;
+
+@RunWith(JMockit.class)
 public class SecurityToolkitTestCase {
 
     private static String proxyHost = null;
@@ -81,7 +80,6 @@ public class SecurityToolkitTestCase {
         return false;
     }
 
-    @Ignore
     @Test
     public void testSSLContext() throws NoSuchProviderException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
 
@@ -120,51 +118,31 @@ public class SecurityToolkitTestCase {
     }
 
     @Test
-    public void testURLConnectionForTunnelingNotSecure() {
-
-        URLConnection urlconn = createMock(URLConnection.class);
-
-        replay(urlconn);
+    public void testURLConnectionForTunnelingNotSecure(@Mocked HttpsURLConnection urlconn) {
 
         assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
-
-        verify(urlconn);
     }
 
     @Test
-    public void testURLConnectionForTunnelingSecureNoProxy() {
+    public void testURLConnectionForTunnelingSecureNoProxy(@Mocked HttpsURLConnection urlconn) {
 
         System.setProperty("https.proxyHost", "");
         System.setProperty("https.proxyPort", "");
 
-        URLConnection urlconn = createMock(HttpsURLConnection.class);
-
-        replay(urlconn);
-
         assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
-
-        verify(urlconn);
     }
 
     @Test
-    public void testURLConnectionForTunnelingSecureProxy() {
+    public void testURLConnectionForTunnelingSecureProxy(
+        @Mocked HttpsURLConnection urlconn, @Mocked SSLTunnelSocketFactory factory) {
 
         System.setProperty("https.proxyHost", "secureproxy");
         System.setProperty("https.proxyPort", "8080");
 
-        URLConnection urlconn = createMock(HttpsURLConnection.class);
-
-        Capture<SSLTunnelSocketFactory> capturedValues = new Capture<>();
-        ((HttpsURLConnection) urlconn).setSSLSocketFactory(capture(capturedValues));
-
-        replay(urlconn);
-
         assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
 
-        verify(urlconn);
-
-        SSLTunnelSocketFactory actualValue = capturedValues.getValue();
-        assertEquals("secureproxy", actualValue.getProxyHost());
-        assertEquals(8080, actualValue.getProxyPort());
+        new Verifications() {{
+            new SSLTunnelSocketFactory("secureproxy", 8080);
+        }};
     }
 }
