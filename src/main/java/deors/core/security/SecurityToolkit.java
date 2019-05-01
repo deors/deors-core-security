@@ -99,6 +99,7 @@ public final class SecurityToolkit {
      * Default constructor. This class is a toolkit and therefore it cannot be instantiated.
      */
     private SecurityToolkit() {
+
         super();
     }
 
@@ -139,9 +140,9 @@ public final class SecurityToolkit {
     }
 
     /**
-     * Prepares an SSL context using the given KeyStore to identify this computer and the given
-     * X.509 certificate to identify the computer(s) in which to trust. If the X.509 certificate is
-     * <code>null</code>, the default TrustManager value is used.
+     * Prepares an SSL context using the given KeyStore to identify this computer, and the given
+     * X.509 certificate to identify the computer(s) in which to trust. If the X.509 certificate
+     * is <code>null</code>, the default TrustManager value is used.
      *
      * @param clientKeyStore the KeyStore that identifies this computer
      * @param keyStorePassword the KeyStore password

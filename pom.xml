@@ -21,7 +21,7 @@
         <deors-core.version>1.0-SNAPSHOT</deors-core.version>
 
         <activation.version>1.1.1</activation.version>
-        <bouncycastle.version>1.46</bouncycastle.version>
+        <bouncycastle.version>1.61</bouncycastle.version>
         <slf4j.version>1.7.26</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
         <xstream.version>1.4.11.1</xstream.version>

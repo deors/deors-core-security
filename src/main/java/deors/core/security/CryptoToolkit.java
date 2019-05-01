@@ -1,6 +1,7 @@
 package deors.core.security;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,23 +12,37 @@ import java.security.SecureRandom;
 import java.security.cert.CertStore;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.DERObjectIdentifier;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
 import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.cms.SignerInformationVerifier;
+import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
+import org.bouncycastle.util.Store;
 
 import deors.core.commons.StringToolkit;
 
@@ -46,19 +61,24 @@ public final class CryptoToolkit {
     private static final Map<String, SecureRandom> PRNG_BAG = new HashMap<>();
 
     /**
-     * Code for the MD5 digest algorithm.
+     * Code for the MD5withRSA digest algorithm.
      */
-    public static final String MD5_DIGEST_ALGORITHM = "md5"; //$NON-NLS-1$
+    public static final String MD5RSA_DIGEST_ALGORITHM = "MD5withRSA"; //$NON-NLS-1$
 
     /**
-     * Code for the SHA1 digest algorithm.
+     * Code for the SHA1withRSA digest algorithm.
      */
-    public static final String SHA1_DIGEST_ALGORITHM = "sha1"; //$NON-NLS-1$
+    public static final String SHA1RSA_DIGEST_ALGORITHM = "SHA1withRSA"; //$NON-NLS-1$
 
     /**
-     * The certificate store type used in PKCS-7 signatures.
+     * Code for the MD5 hashing algorithm.
      */
-    private static final String COLLECTION_CERT_STORE = "Collection"; //$NON-NLS-1$
+    public static final String MD5_HASHING_ALGORITHM = "md5"; //$NON-NLS-1$
+
+    /**
+     * Code for the SHA1 hashing algorithm.
+     */
+    public static final String SHA1_HASHING_ALGORITHM = "sha1"; //$NON-NLS-1$
 
     /**
      * Identifier for a CBC block cipher as it appears in the algorithm identification string.
@@ -82,9 +102,10 @@ public final class CryptoToolkit {
     static final String DV_SECURITY_PROVIDER = "BC"; //$NON-NLS-1$
 
     /**
-     * Security provider. Configurable in the properties file using the key referenced by the
-     * constant <code>KN_SECURITY_PROVIDER</code> and <code>DV_SECURITY_PROVIDER</code> as the
-     * default value.
+     * Security provider used by default in provider-agnostic cryptographic operations.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_SECURITY_PROVIDER</code> and
+     * <code>DV_SECURITY_PROVIDER</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, String)
      * @see CryptoToolkit#KN_SECURITY_PROVIDER
@@ -94,6 +115,29 @@ public final class CryptoToolkit {
         SecurityContext.getConfigurationProperty(KN_SECURITY_PROVIDER, DV_SECURITY_PROVIDER);
 
     /**
+     * Key name in the properties file for <code>DIGEST_ALGORITHM</code> property.
+     */
+    static final String KN_DIGEST_ALGORITHM = "crypto.digestAlgorithm"; //$NON-NLS-1$
+
+    /**
+     * Default value for <code>DIGEST_ALGORITHM</code> property.
+     */
+    static final String DV_DIGEST_ALGORITHM = MD5RSA_DIGEST_ALGORITHM;
+
+    /**
+     * Digest algorithm (hashing + encryption pair) used for message digests.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_DIGEST_ALGORITHM</code> and
+     * <code>DV_DIGEST_ALGORITHM</code> as the default value.
+     *
+     * @see SecurityContext#getConfigurationProperty(String, String)
+     * @see CryptoToolkit#KN_DIGEST_ALGORITHM
+     * @see CryptoToolkit#DV_DIGEST_ALGORITHM
+     */
+    static final String DIGEST_ALGORITHM =
+        SecurityContext.getConfigurationProperty(KN_DIGEST_ALGORITHM, DV_DIGEST_ALGORITHM);
+
+    /**
      * Key name in the properties file for <code>HASHING_ALGORITHM</code> property.
      */
     static final String KN_HASHING_ALGORITHM = "crypto.hashingAlgorithm"; //$NON-NLS-1$
@@ -101,11 +145,12 @@ public final class CryptoToolkit {
     /**
      * Default value for <code>HASHING_ALGORITHM</code> property.
      */
-    static final String DV_HASHING_ALGORITHM = MD5_DIGEST_ALGORITHM;
+    static final String DV_HASHING_ALGORITHM = MD5_HASHING_ALGORITHM;
 
     /**
-     * Hashing algorithm used for message digests. Configurable in the properties file using the key
-     * referenced by the constant <code>KN_HASHING_ALGORITHM</code> and
+     * Hashing algorithm used for message digests.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_HASHING_ALGORITHM</code> and
      * <code>DV_HASHING_ALGORITHM</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, String)
@@ -126,8 +171,9 @@ public final class CryptoToolkit {
     static final String DV_PRNG_ALGORITHM = "sha1prng"; //$NON-NLS-1$
 
     /**
-     * Pseudo-random number generation algorithm. Configurable in the properties file using the key
-     * referenced by the constant <code>KN_PRNG_ALGORITHM</code> and
+     * Pseudo-random number generation algorithm.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_PRNG_ALGORITHM</code> and
      * <code>DV_PRNG_ALGORITHM</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, String)
@@ -148,9 +194,10 @@ public final class CryptoToolkit {
     static final String DV_KEY_GEN_ALGORITHM = "DESede"; //$NON-NLS-1$
 
     /**
-     * Key generation algorithm. Configurable in the properties file using the key referenced by the
-     * constant <code>KN_KEY_GEN_ALGORITHM</code> and <code>DV_KEY_GEN_ALGORITHM</code> as the
-     * default value.
+     * Key generation algorithm.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_KEY_GEN_ALGORITHM</code> and
+     * <code>DV_KEY_GEN_ALGORITHM</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, String)
      * @see CryptoToolkit#KN_KEY_GEN_ALGORITHM
@@ -170,9 +217,10 @@ public final class CryptoToolkit {
     static final int DV_KEY_SIZE_IN_BYTES = 24;
 
     /**
-     * Key size in bytes. Configurable in the properties file using the key referenced by the
-     * constant <code>KN_KEY_SIZE_IN_BYTES</code> and <code>DV_KEY_SIZE_IN_BYTES</code> as the
-     * default value.
+     * Key size in bytes.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_KEY_SIZE_IN_BYTES</code> and
+     * <code>DV_KEY_SIZE_IN_BYTES</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, int)
      * @see CryptoToolkit#KN_KEY_SIZE_IN_BYTES
@@ -192,8 +240,9 @@ public final class CryptoToolkit {
     static final String DV_SYMMETRIC_ALGORITHM = "DESede/CBC/PKCS7Padding"; //$NON-NLS-1$
 
     /**
-     * Symmetric encryption/decryption algorithm. Configurable in the properties file using the key
-     * referenced by the constant <code>KN_SYMMETRIC_ALGORITHM</code> and
+     * Symmetric encryption/decryption algorithm.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_SYMMETRIC_ALGORITHM</code> and
      * <code>DV_SYMMETRIC_ALGORITHM</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, String)
@@ -214,8 +263,9 @@ public final class CryptoToolkit {
     static final String DV_ASYMMETRIC_ALGORITHM = "RSA/NONE/PKCS1Padding"; //$NON-NLS-1$
 
     /**
-     * Asymmetric encryption/decryption algorithm. Configurable in the properties file using the key
-     * referenced by the constant <code>KN_ASYMMETRIC_ALGORITHM</code> and
+     * Asymmetric encryption/decryption algorithm.
+     * Configurable in the properties file using the key referenced by the constant
+     * <code>KN_ASYMMETRIC_ALGORITHM</code> and
      * <code>DV_ASYMMETRIC_ALGORITHM</code> as the default value.
      *
      * @see SecurityContext#getConfigurationProperty(String, String)
@@ -236,18 +286,21 @@ public final class CryptoToolkit {
      * Calculates the stream contents hash using the especified hashing algorithm.
      *
      * @param is the source stream
-     * @param algorithm the hashing algorithm
+     * @param hashingAlgorithm the hashing algorithm
      *
      * @return the hash
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
+     *
+     * @see CryptoToolkit#MD5_HASHING_ALGORITHM
+     * @see CryptoToolkit#SHA1_HASHING_ALGORITHM
      */
-    public static byte[] calculateHash(java.io.InputStream is, String algorithm)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+    public static byte[] calculateHash(java.io.InputStream is, String hashingAlgorithm)
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
-        MessageDigest md = MessageDigest.getInstance(algorithm);
+        MessageDigest md = MessageDigest.getInstance(hashingAlgorithm);
 
         byte[] buffer = new byte[SecurityContext.DEFAULT_BUFFER_SIZE];
         int n;
@@ -266,14 +319,14 @@ public final class CryptoToolkit {
      *
      * @return the hash
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      *
      * @see CryptoToolkit#HASHING_ALGORITHM
      */
     public static byte[] calculateHash(java.io.InputStream is)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
         return calculateHash(is, HASHING_ALGORITHM);
     }
@@ -282,21 +335,24 @@ public final class CryptoToolkit {
      * Calculates the file contents hash using the specified hashing algorithm.
      *
      * @param file the source file
-     * @param algorithm the hashing algorithm
+     * @param hashingAlgorithm the hashing algorithm
      *
      * @return the hash
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
+     *
+     * @see CryptoToolkit#MD5_HASHING_ALGORITHM
+     * @see CryptoToolkit#SHA1_HASHING_ALGORITHM
      */
-    public static byte[] calculateHash(java.io.File file, String algorithm)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+    public static byte[] calculateHash(java.io.File file, String hashingAlgorithm)
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(file);
-            return calculateHash(fis, algorithm);
+            return calculateHash(fis, hashingAlgorithm);
         } finally {
             if (fis != null) {
                 fis.close();
@@ -311,14 +367,14 @@ public final class CryptoToolkit {
      *
      * @return the hash
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      *
      * @see CryptoToolkit#HASHING_ALGORITHM
      */
     public static byte[] calculateHash(java.io.File file)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
         FileInputStream fis = null;
         try {
@@ -336,18 +392,21 @@ public final class CryptoToolkit {
      * an hexadecimal string.
      *
      * @param is the source stream
-     * @param algorithm the hashing algorithm
+     * @param hashingAlgorithm the hashing algorithm
      *
      * @return the hash as an hexadecimal string
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
+     *
+     * @see CryptoToolkit#MD5_HASHING_ALGORITHM
+     * @see CryptoToolkit#SHA1_HASHING_ALGORITHM
      */
-    public static String calculateHashString(java.io.InputStream is, String algorithm)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+    public static String calculateHashString(java.io.InputStream is, String hashingAlgorithm)
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
-        return StringToolkit.asHexadecimalString(calculateHash(is, algorithm));
+        return StringToolkit.asHexadecimalString(calculateHash(is, hashingAlgorithm));
     }
 
     /**
@@ -358,14 +417,14 @@ public final class CryptoToolkit {
      *
      * @return the hash as an hexadecimal string
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      *
      * @see CryptoToolkit#HASHING_ALGORITHM
      */
     public static String calculateHashString(java.io.InputStream is)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
         return calculateHashString(is, HASHING_ALGORITHM);
     }
@@ -375,21 +434,24 @@ public final class CryptoToolkit {
      * hexadecimal string.
      *
      * @param file the source file
-     * @param algorithm the hashing algorithm
+     * @param hashingAlgorithm the hashing algorithm
      *
      * @return the hash as an hexadecimal string
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
+     *
+     * @see CryptoToolkit#MD5_HASHING_ALGORITHM
+     * @see CryptoToolkit#SHA1_HASHING_ALGORITHM
      */
-    public static String calculateHashString(java.io.File file, String algorithm)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+    public static String calculateHashString(java.io.File file, String hashingAlgorithm)
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(file);
-            return calculateHashString(fis, algorithm);
+            return calculateHashString(fis, hashingAlgorithm);
         } finally {
             if (fis != null) {
                 fis.close();
@@ -405,14 +467,14 @@ public final class CryptoToolkit {
      *
      * @return the hash as an hexadecimal string
      *
-     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.NoSuchAlgorithmException the hashing algorithm is not supported
      *
      * @see CryptoToolkit#HASHING_ALGORITHM
      */
     public static String calculateHashString(java.io.File file)
-        throws java.security.NoSuchAlgorithmException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.NoSuchAlgorithmException {
 
         FileInputStream fis = null;
         try {
@@ -443,10 +505,10 @@ public final class CryptoToolkit {
      *
      * @see CryptoToolkit#PRNG_BAG
      */
-    public static javax.crypto.SecretKey createSymmetricKey(String prngAlgorithm,
-                                                            String keyGenAlgorithm,
-                                                            int keySizeInBytes,
-                                                            String securityProvider)
+    public static SecretKey createSymmetricKey(String prngAlgorithm,
+                                               String keyGenAlgorithm,
+                                               int keySizeInBytes,
+                                               String securityProvider)
         throws java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException {
 
@@ -464,8 +526,8 @@ public final class CryptoToolkit {
         }
 
         // we instantiate the key generator
-        javax.crypto.KeyGenerator keygen =
-            javax.crypto.KeyGenerator.getInstance(keyGenAlgorithm, securityProvider);
+        KeyGenerator keygen =
+            KeyGenerator.getInstance(keyGenAlgorithm, securityProvider);
 
         // we initialize the key generator
         // (key length and random number generator)
@@ -490,7 +552,7 @@ public final class CryptoToolkit {
      * @see CryptoToolkit#KEY_SIZE_IN_BYTES
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
-    public static javax.crypto.SecretKey createSymmetricKey()
+    public static SecretKey createSymmetricKey()
         throws java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException {
 
@@ -507,9 +569,9 @@ public final class CryptoToolkit {
      *
      * @return the constructed key
      */
-    public static javax.crypto.SecretKey createSymmetricKey(byte[] sourceKey, String keyGenAlgorithm) {
+    public static SecretKey createSymmetricKey(byte[] sourceKey, String keyGenAlgorithm) {
 
-        return new javax.crypto.spec.SecretKeySpec(sourceKey, keyGenAlgorithm);
+        return new SecretKeySpec(sourceKey, keyGenAlgorithm);
     }
 
     /**
@@ -520,7 +582,7 @@ public final class CryptoToolkit {
      *
      * @return the constructed key
      */
-    public static javax.crypto.SecretKey createSymmetricKey(byte[] sourceKey) {
+    public static SecretKey createSymmetricKey(byte[] sourceKey) {
 
         return createSymmetricKey(sourceKey, KEY_GEN_ALGORITHM);
     }
@@ -535,42 +597,41 @@ public final class CryptoToolkit {
      *
      * @return the decrypted data
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#CBC_INITIALIZATION_VECTOR
      */
     public static byte[] decrypt(byte[] data, Key key, String decryptionAlgorithm,
                                  String securityProvider)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
                java.security.NoSuchAlgorithmException,
+               java.security.NoSuchProviderException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
-        javax.crypto.Cipher cipher =
-            javax.crypto.Cipher.getInstance(decryptionAlgorithm, securityProvider);
+        Cipher cipher = Cipher.getInstance(decryptionAlgorithm, securityProvider);
 
         if (decryptionAlgorithm.indexOf(CBC_ID) == -1) {
-            cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key);
+            cipher.init(Cipher.DECRYPT_MODE, key);
         } else {
-            cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key,
+            cipher.init(Cipher.DECRYPT_MODE, key,
                 new IvParameterSpec(CBC_INITIALIZATION_VECTOR));
         }
 
-        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        javax.crypto.CipherOutputStream cos = new javax.crypto.CipherOutputStream(baos, cipher);
+        ByteArrayOutputStream decryptedStream = new ByteArrayOutputStream();
+        CipherOutputStream cos = new CipherOutputStream(decryptedStream, cipher);
 
         cos.write(data);
         cos.close();
 
-        return baos.toByteArray();
+        return decryptedStream.toByteArray();
     }
 
     /**
@@ -582,24 +643,24 @@ public final class CryptoToolkit {
      *
      * @return the decrypted data
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#ASYMMETRIC_ALGORITHM
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
     public static byte[] decryptAsymmetric(byte[] data, Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         return decrypt(data, key, ASYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -613,24 +674,24 @@ public final class CryptoToolkit {
      *
      * @return the decrypted data
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#SYMMETRIC_ALGORITHM
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
     public static byte[] decryptSymmetric(byte[] data, Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         return decrypt(data, key, SYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -646,39 +707,37 @@ public final class CryptoToolkit {
      * @param decryptionAlgorithm the decryption algorithm
      * @param securityProvider the security provider
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#CBC_INITIALIZATION_VECTOR
      */
     public static void decrypt(InputStream dataStream, OutputStream decryptedStream, Key key,
                                String decryptionAlgorithm, String securityProvider)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         final int blocksInBuffer = 8;
 
-        javax.crypto.Cipher cipher =
-            javax.crypto.Cipher.getInstance(decryptionAlgorithm, securityProvider);
+        Cipher cipher = Cipher.getInstance(decryptionAlgorithm, securityProvider);
 
         if (decryptionAlgorithm.indexOf(CBC_ID) == -1) {
-            cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key);
+            cipher.init(Cipher.DECRYPT_MODE, key);
         } else {
-            cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key,
+            cipher.init(Cipher.DECRYPT_MODE, key,
                 new IvParameterSpec(CBC_INITIALIZATION_VECTOR));
         }
 
-        javax.crypto.CipherOutputStream cos =
-            new javax.crypto.CipherOutputStream(decryptedStream, cipher);
+        CipherOutputStream cos = new CipherOutputStream(decryptedStream, cipher);
 
         byte[] buffer = new byte[cipher.getBlockSize() * blocksInBuffer];
 
@@ -702,22 +761,22 @@ public final class CryptoToolkit {
      * @param decryptedStream stream where to write the decrypted data
      * @param key the decryption key
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      */
     public static void decryptAsymmetric(InputStream dataStream, OutputStream decryptedStream,
                                          Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         decrypt(dataStream, decryptedStream, key, ASYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -731,22 +790,22 @@ public final class CryptoToolkit {
      * @param decryptedStream stream where to write the decrypted data
      * @param key the decryption key
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      */
     public static void decryptSymmetric(InputStream dataStream, OutputStream decryptedStream,
                                         Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         decrypt(dataStream, decryptedStream, key, SYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -761,42 +820,41 @@ public final class CryptoToolkit {
      *
      * @return the encrypted data
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the encryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#CBC_INITIALIZATION_VECTOR
      */
     public static byte[] encrypt(byte[] data, Key key, String encryptionAlgorithm,
                                  String securityProvider)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
-        javax.crypto.Cipher cipher =
-            javax.crypto.Cipher.getInstance(encryptionAlgorithm, securityProvider);
+        Cipher cipher = Cipher.getInstance(encryptionAlgorithm, securityProvider);
 
         if (encryptionAlgorithm.indexOf(CBC_ID) == -1) {
-            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key);
+            cipher.init(Cipher.ENCRYPT_MODE, key);
         } else {
-            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key,
+            cipher.init(Cipher.ENCRYPT_MODE, key,
                 new IvParameterSpec(CBC_INITIALIZATION_VECTOR));
         }
 
-        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        javax.crypto.CipherOutputStream cos = new javax.crypto.CipherOutputStream(baos, cipher);
+        ByteArrayOutputStream encryptedStream = new ByteArrayOutputStream();
+        CipherOutputStream cos = new CipherOutputStream(encryptedStream, cipher);
 
         cos.write(data);
         cos.close();
 
-        return baos.toByteArray();
+        return encryptedStream.toByteArray();
     }
 
     /**
@@ -808,24 +866,24 @@ public final class CryptoToolkit {
      *
      * @return the encrypted data
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the encryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#ASYMMETRIC_ALGORITHM
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
     public static byte[] encryptAsymmetric(byte[] data, Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         return encrypt(data, key, ASYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -839,24 +897,24 @@ public final class CryptoToolkit {
      *
      * @return the encrypted data
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the encryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#SYMMETRIC_ALGORITHM
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
     public static byte[] encryptSymmetric(byte[] data, Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         return encrypt(data, key, SYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -872,39 +930,39 @@ public final class CryptoToolkit {
      * @param encryptionAlgorithm the encryption algorithm
      * @param securityProvider the security provider
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#CBC_INITIALIZATION_VECTOR
      */
     public static void encrypt(InputStream dataStream, OutputStream encryptedStream, Key key,
                                String encryptionAlgorithm, String securityProvider)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               java.security.cert.CertificateEncodingException,
+               javax.crypto.NoSuchPaddingException {
 
         final int blocksInBuffer = 8;
 
-        javax.crypto.Cipher cipher =
-            javax.crypto.Cipher.getInstance(encryptionAlgorithm, securityProvider);
+        Cipher cipher = Cipher.getInstance(encryptionAlgorithm, securityProvider);
 
         if (encryptionAlgorithm.indexOf(CBC_ID) == -1) {
-            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key);
+            cipher.init(Cipher.ENCRYPT_MODE, key);
         } else {
-            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, key,
+            cipher.init(Cipher.ENCRYPT_MODE, key,
                 new IvParameterSpec(CBC_INITIALIZATION_VECTOR));
         }
 
-        javax.crypto.CipherOutputStream cos =
-            new javax.crypto.CipherOutputStream(encryptedStream, cipher);
+        CipherOutputStream cos = new CipherOutputStream(encryptedStream, cipher);
 
         byte[] buffer = new byte[cipher.getBlockSize() * blocksInBuffer];
 
@@ -928,22 +986,24 @@ public final class CryptoToolkit {
      * @param encryptedStream stream where to write the encrypted data
      * @param key the decryption key
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      */
     public static void encryptAsymmetric(InputStream dataStream, OutputStream encryptedStream,
                                          Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               java.security.cert.CertificateEncodingException,
+               javax.crypto.NoSuchPaddingException {
 
         encrypt(dataStream, encryptedStream, key, ASYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -957,22 +1017,24 @@ public final class CryptoToolkit {
      * @param encryptedStream stream where to write the encrypted data
      * @param key the decryption key
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      */
     public static void encryptSymmetric(InputStream dataStream, OutputStream encryptedStream,
                                         Key key)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               java.security.cert.CertificateEncodingException,
+               javax.crypto.NoSuchPaddingException {
 
         encrypt(dataStream, encryptedStream, key, SYMMETRIC_ALGORITHM, SECURITY_PROVIDER);
     }
@@ -989,25 +1051,25 @@ public final class CryptoToolkit {
      *
      * @return the PKCS-1 signature
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the encryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
-     * @see CryptoToolkit#MD5_DIGEST_ALGORITHM
-     * @see CryptoToolkit#SHA1_DIGEST_ALGORITHM
+     * @see CryptoToolkit#MD5_HASHING_ALGORITHM
+     * @see CryptoToolkit#SHA1_HASHING_ALGORITHM
      */
     public static byte[] signDataPKCS1(byte[] data, PrivateKey privateKey, String hashingAlgorithm,
                                        String encryptionAlgorithm, String securityProvider)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         byte[] hash = calculateHash(new ByteArrayInputStream(data), hashingAlgorithm);
 
@@ -1025,25 +1087,25 @@ public final class CryptoToolkit {
      *
      * @return the PKCS-1 signature
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the encryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the encryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#HASHING_ALGORITHM
      * @see CryptoToolkit#ASYMMETRIC_ALGORITHM
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
     public static byte[] signDataPKCS1(byte[] data, PrivateKey privateKey)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         return signDataPKCS1(data, privateKey, HASHING_ALGORITHM, ASYMMETRIC_ALGORITHM,
                              SECURITY_PROVIDER);
@@ -1074,19 +1136,19 @@ public final class CryptoToolkit {
     public static boolean verifySignaturePKCS1(byte[] signature, byte[] data,
                                                X509Certificate certificate,
                                                String decryptionAlgorithm, String securityProvider)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         byte[] decSign =
             decrypt(signature, certificate.getPublicKey(), decryptionAlgorithm, securityProvider);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(decSign);
         ASN1InputStream a1is = null;
-        DERSequence mainSeq = null;
+        ASN1Sequence mainSeq = null;
 
         try {
             a1is = new ASN1InputStream(bais);
@@ -1096,12 +1158,12 @@ public final class CryptoToolkit {
             }
         }
 
-        mainSeq = (DERSequence) a1is.readObject();
+        mainSeq = (ASN1Sequence) a1is.readObject();
 
-        DERSequence idSeq = (DERSequence) mainSeq.getObjectAt(0);
-        DERObjectIdentifier objId = (DERObjectIdentifier) idSeq.getObjectAt(0);
+        ASN1Sequence idSeq = (ASN1Sequence) mainSeq.getObjectAt(0);
+        ASN1ObjectIdentifier objId = (ASN1ObjectIdentifier) idSeq.getObjectAt(0);
 
-        String algorithm = getMappedInvertedHashingAlgorithm(objId.getId());
+        String algorithm = getReversedHashingAlgorithm(objId.getId());
 
         ASN1OctetString hashOctet = (ASN1OctetString) mainSeq.getObjectAt(1);
         byte[] hashFromSign = hashOctet.getOctets();
@@ -1121,6 +1183,32 @@ public final class CryptoToolkit {
     }
 
     /**
+     * Returns a hashing algorithm in text form from the given algorithm
+     * id for use in Bouncy Castle.
+     *
+     * @param algorithmId the hashing algorithm id for use in Bouncy Castle
+     *
+     * @return the hashing algorithm in text form
+     *
+     * @see CryptoToolkit#MD5_HASHING_ALGORITHM
+     * @see CryptoToolkit#SHA1_HASHING_ALGORITHM
+     */
+    private static String getReversedHashingAlgorithm(String algorithmId) {
+
+        String hashingAlgorithm = null;
+
+        if (algorithmId.equals(CMSSignedDataGenerator.DIGEST_MD5)) {
+            hashingAlgorithm = MD5_HASHING_ALGORITHM;
+        } else if (algorithmId.equals(CMSSignedDataGenerator.DIGEST_SHA1)) {
+            hashingAlgorithm = SHA1_HASHING_ALGORITHM;
+        } else {
+            throw new IllegalArgumentException(SecurityContext.getMessage("CRYPTO_ERR_INVALID_HASH")); //$NON-NLS-1$
+        }
+
+        return hashingAlgorithm;
+    }
+
+    /**
      * Verifies a PKCS-1 signature using the configured asymmetric decryption algorithm and security
      * provider.<br>
      *
@@ -1133,142 +1221,87 @@ public final class CryptoToolkit {
      *
      * @return whether the signature is valid
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the decryption algorithm is not supported
      * @throws java.security.InvalidAlgorithmParameterException the decryption algorithm parameters
      *                                                          are not valid
      * @throws java.security.InvalidKeyException the key is not valid
      * @throws javax.crypto.NoSuchPaddingException the padding method is not supported
-     * @throws java.io.IOException an I/O exception
      *
      * @see CryptoToolkit#ASYMMETRIC_ALGORITHM
      * @see CryptoToolkit#SECURITY_PROVIDER
      */
     public static boolean verifySignaturePKCS1(byte[] signature, byte[] data,
                                                X509Certificate certificate)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.InvalidAlgorithmParameterException,
                java.security.InvalidKeyException,
-               javax.crypto.NoSuchPaddingException,
-               java.io.IOException {
+               javax.crypto.NoSuchPaddingException {
 
         return verifySignaturePKCS1(signature, data, certificate, ASYMMETRIC_ALGORITHM,
                                     SECURITY_PROVIDER);
     }
 
     /**
-     * Generates a PKCS-7 signature using Bouncy Castle security provider, the given hashing
-     * algorithm (actually md5 or sha1) and whether to include the data and the signing certificate
-     * in the signature.
+     * Generates a PKCS-7 signature using Bouncy Castle security provider, the given digest
+     * algorithm and whether to include the data and the signing certificate in the signature.
      *
      * @param data the data to be signed
      * @param certificate the signing certificate
      * @param privateKey the signing key
-     * @param algorithm the hashing algorithm
+     * @param digestAlgorithm the digest algorithm
      * @param dataIncluded whether data is included in signature
      * @param certIncluded whether signing certificate is included in signature
      *
      * @return the PKCS-7 signature
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
-     * @throws java.security.NoSuchAlgorithmException the digest algorithm is not supported
-     * @throws java.security.InvalidAlgorithmParameterException error creating the certificate store
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
      * @throws java.security.cert.CertStoreException error creating the certificate store
      * @throws org.bouncycastle.cms.CMSException error creating the signature
-     * @throws java.io.IOException an I/O exception
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
-     * @see CryptoToolkit#MD5_DIGEST_ALGORITHM
-     * @see CryptoToolkit#SHA1_DIGEST_ALGORITHM
+     * @see CryptoToolkit#MD5RSA_DIGEST_ALGORITHM
+     * @see CryptoToolkit#SHA1RSA_DIGEST_ALGORITHM
      */
     public static byte[] signDataPKCS7(byte[] data, X509Certificate certificate,
-                                       PrivateKey privateKey, String algorithm,
+                                       PrivateKey privateKey, String digestAlgorithm,
                                        boolean dataIncluded, boolean certIncluded)
-        throws java.security.NoSuchProviderException,
-               java.security.NoSuchAlgorithmException,
-               java.security.InvalidAlgorithmParameterException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
                java.security.cert.CertStoreException,
                org.bouncycastle.cms.CMSException,
-               java.io.IOException {
+               org.bouncycastle.operator.OperatorCreationException {
 
-        CMSSignedDataGenerator sdg = new CMSSignedDataGenerator();
+        ContentSigner signer = new JcaContentSignerBuilder(digestAlgorithm)
+            .build(privateKey);
 
-        String algorithmId = getMappedHashingAlgorithm(algorithm);
+        CMSSignedDataGenerator generator = new CMSSignedDataGenerator();
 
-        sdg.addSigner(privateKey, certificate, algorithmId);
+        generator.addSignerInfoGenerator(
+            new JcaSignerInfoGeneratorBuilder(
+                new JcaDigestCalculatorProviderBuilder()
+                    .build())
+                .build(signer, certificate));
 
         if (certIncluded) {
-            ArrayList certs = new ArrayList();
-            certs.add(certificate);
-
-            CertStore store =
-                CertStore.getInstance(COLLECTION_CERT_STORE,
-                    new CollectionCertStoreParameters(certs), SecurityToolkit.BC_SECURITY_PROVIDER);
-
-            sdg.addCertificatesAndCRLs(store);
+            generator.addCertificates(new JcaCertStore(Arrays.asList(certificate)));
         }
 
-        CMSProcessableByteArray pba = new CMSProcessableByteArray(data);
+        CMSProcessableByteArray processableData = new CMSProcessableByteArray(data);
 
-        CMSSignedData sd = sdg.generate(pba, dataIncluded, SecurityToolkit.BC_SECURITY_PROVIDER);
+        CMSSignedData signedData = generator.generate(processableData, dataIncluded);
 
-        return sd.getEncoded();
+        return signedData.getEncoded();
     }
 
     /**
-     * Returns a hashing algorithm id for use in Bouncy Castle from the given
-     * algorithm in text form.
-     *
-     * @param algorithm the hashing algorithm in text form
-     *
-     * @return the hashing algorithm id for use in Bouncy Castle
-     *
-     * @see CryptoToolkit#MD5_DIGEST_ALGORITHM
-     * @see CryptoToolkit#SHA1_DIGEST_ALGORITHM
-     */
-    private static String getMappedHashingAlgorithm(String algorithm) {
-
-        String algorithmId = null;
-
-        if (algorithm.equalsIgnoreCase(MD5_DIGEST_ALGORITHM)) {
-            algorithmId = CMSSignedDataGenerator.DIGEST_MD5;
-        } else if (algorithm.equalsIgnoreCase(SHA1_DIGEST_ALGORITHM)) {
-            algorithmId = CMSSignedDataGenerator.DIGEST_SHA1;
-        } else {
-            throw new IllegalArgumentException(SecurityContext.getMessage("CRYPTO_ERR_INVALID_HASH")); //$NON-NLS-1$
-        }
-
-        return algorithmId;
-    }
-
-    /**
-     * Returns a hashing algorithm in text form from the given algorithm
-     * id for use in Bouncy Castle.
-     *
-     * @param algorithmId the hashing algorithm id for use in Bouncy Castle
-     *
-     * @return the hashing algorithm in text form
-     *
-     * @see CryptoToolkit#MD5_DIGEST_ALGORITHM
-     * @see CryptoToolkit#SHA1_DIGEST_ALGORITHM
-     */
-    private static String getMappedInvertedHashingAlgorithm(String algorithmId) {
-
-        String algorithm = null;
-
-        if (algorithmId.equals(CMSSignedDataGenerator.DIGEST_MD5)) {
-            algorithm = MD5_DIGEST_ALGORITHM;
-        } else if (algorithmId.equals(CMSSignedDataGenerator.DIGEST_SHA1)) {
-            algorithm = SHA1_DIGEST_ALGORITHM;
-        } else {
-            throw new IllegalArgumentException(SecurityContext.getMessage("CRYPTO_ERR_INVALID_HASH")); //$NON-NLS-1$
-        }
-
-        return algorithm;
-    }
-
-    /**
-     * Generates a PKCS-7 signature using the configured hashing algorithm without including the
+     * Generates a PKCS-7 signature using the configured digest algorithm without including the
      * data nor the signing certificate in the signature.
      *
      * @param data the data to be signed
@@ -1277,25 +1310,25 @@ public final class CryptoToolkit {
      *
      * @return the PKCS-7 signature
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
-     * @throws java.security.NoSuchAlgorithmException the digest algorithm is not supported
-     * @throws java.security.InvalidAlgorithmParameterException error creating the certificate store
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
      * @throws java.security.cert.CertStoreException error creating the certificate store
      * @throws org.bouncycastle.cms.CMSException error creating the signature
-     * @throws java.io.IOException an I/O exception
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
-     * @see CryptoToolkit#HASHING_ALGORITHM
+     * @see CryptoToolkit#DIGEST_ALGORITHM
      */
     public static byte[] signDataPKCS7(byte[] data, X509Certificate certificate,
                                        PrivateKey privateKey)
-        throws java.security.NoSuchProviderException,
-               java.security.NoSuchAlgorithmException,
-               java.security.InvalidAlgorithmParameterException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
                java.security.cert.CertStoreException,
                org.bouncycastle.cms.CMSException,
-               java.io.IOException {
+               org.bouncycastle.operator.OperatorCreationException {
 
-        return signDataPKCS7(data, certificate, privateKey, HASHING_ALGORITHM, false, false);
+        return signDataPKCS7(data, certificate, privateKey, DIGEST_ALGORITHM, false, false);
     }
 
     /**
@@ -1308,33 +1341,36 @@ public final class CryptoToolkit {
      * @return whether the signature is valid
      *
      * @throws java.security.NoSuchProviderException the security provider is not supported
-     * @throws java.security.NoSuchAlgorithmException the digest algorithm is not supported
      * @throws java.security.cert.CertificateNotYetValidException the certificate is not yet valid
      * @throws java.security.cert.CertificateExpiredException the certificate has expired
      * @throws org.bouncycastle.cms.CMSException error reading the signature
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     public static boolean verifySignaturePKCS7(byte[] signature, byte[] data,
                                                X509Certificate certificate)
         throws java.security.NoSuchProviderException,
-               java.security.NoSuchAlgorithmException,
                java.security.cert.CertificateNotYetValidException,
                java.security.cert.CertificateExpiredException,
-               org.bouncycastle.cms.CMSException {
+               org.bouncycastle.cms.CMSException,
+               org.bouncycastle.operator.OperatorCreationException {
 
-        CMSProcessableByteArray pba = new CMSProcessableByteArray(data);
+        CMSProcessableByteArray processableData = new CMSProcessableByteArray(data);
 
-        CMSSignedData sd = new CMSSignedData(pba, signature);
+        CMSSignedData signedData = new CMSSignedData(processableData, signature);
 
-        SignerInformationStore sis = sd.getSignerInfos();
-        Collection c = sis.getSigners();
-        Iterator it = c.iterator();
+        SignerInformationStore signerStore = signedData.getSignerInfos();
+        Collection signers = signerStore.getSigners();
 
-        if (!it.hasNext()) {
+        if (signers.size() == 0) {
             return false;
         }
 
-        SignerInformation signer = (SignerInformation) it.next();
+        SignerInformation signerInfo = (SignerInformation) signers.iterator().next();
 
-        return signer.verify(certificate, SecurityToolkit.BC_SECURITY_PROVIDER);
+        SignerInformationVerifier verifier =
+            new JcaSimpleSignerInfoVerifierBuilder()
+                .build(certificate);
+
+        return signerInfo.verify(verifier);
     }
 }

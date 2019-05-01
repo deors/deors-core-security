@@ -23,6 +23,7 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertStoreException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
 import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -102,7 +104,7 @@ public class CryptoToolkitTestCase {
         String combined = StringToolkit.combine(strings, NEW_LINE);
         ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
 
-        byte[] hash = CryptoToolkit.calculateHash(bais, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
+        byte[] hash = CryptoToolkit.calculateHash(bais, CryptoToolkit.SHA1_HASHING_ALGORITHM);
         assertNotNull(hash);
         byte[] expected = new byte[] {
             126, 105, 119, -97, 127, -38, -116, 79, -119, -116,
@@ -158,7 +160,7 @@ public class CryptoToolkitTestCase {
         String combined = StringToolkit.combine(strings, NEW_LINE);
         File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
 
-        byte[] hash = CryptoToolkit.calculateHash(f, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
+        byte[] hash = CryptoToolkit.calculateHash(f, CryptoToolkit.SHA1_HASHING_ALGORITHM);
         assertNotNull(hash);
         byte[] expected = new byte[] {
             126, 105, 119, -97, 127, -38, -116, 79, -119, -116,
@@ -216,7 +218,7 @@ public class CryptoToolkitTestCase {
         String combined = StringToolkit.combine(strings, NEW_LINE);
         ByteArrayInputStream bais = new ByteArrayInputStream(combined.getBytes("ISO-8859-1"));
 
-        String hash = CryptoToolkit.calculateHashString(bais, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
+        String hash = CryptoToolkit.calculateHashString(bais, CryptoToolkit.SHA1_HASHING_ALGORITHM);
         assertNotNull(hash);
         String expected = "7E69779F7FDA8C4F898C19407A770B43C953973A";
         assertEquals(expected, hash);
@@ -269,7 +271,7 @@ public class CryptoToolkitTestCase {
         String combined = StringToolkit.combine(strings, NEW_LINE);
         File f = IOToolkit.writeFile(combined.getBytes("ISO-8859-1"));
 
-        String hash = CryptoToolkit.calculateHashString(f, CryptoToolkit.SHA1_DIGEST_ALGORITHM);
+        String hash = CryptoToolkit.calculateHashString(f, CryptoToolkit.SHA1_HASHING_ALGORITHM);
         assertNotNull(hash);
         String expected = "7E69779F7FDA8C4F898C19407A770B43C953973A";
         assertEquals(expected, hash);
@@ -417,7 +419,8 @@ public class CryptoToolkitTestCase {
     @Test
     public void testEncryptDecryptStreams()
         throws NoSuchAlgorithmException, NoSuchProviderException, IOException,
-               NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+               NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
+               CertificateEncodingException {
 
         SecretKey key = CryptoToolkit.createSymmetricKey();
         byte[] data = new byte[] {
@@ -440,7 +443,8 @@ public class CryptoToolkitTestCase {
     @Test
     public void testEncryptDecryptStreamsSymmetric()
         throws NoSuchAlgorithmException, NoSuchProviderException, IOException,
-               NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+               NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
+               CertificateEncodingException {
 
         SecretKey key = CryptoToolkit.createSymmetricKey();
         byte[] data = new byte[] {
@@ -522,7 +526,7 @@ public class CryptoToolkitTestCase {
             -97, 91, -72, -127, -33, 76, 6, 89, -100, -15,
             -110, 26, -34, 41, 9, 22, 109, 16, 60, -2
         };
-        byte[] signature = CryptoToolkit.signDataPKCS1(data, privateKey, CryptoToolkit.SHA1_DIGEST_ALGORITHM, "RSA/NONE/PKCS1Padding", "BC");
+        byte[] signature = CryptoToolkit.signDataPKCS1(data, privateKey, CryptoToolkit.SHA1_HASHING_ALGORITHM, "RSA/NONE/PKCS1Padding", "BC");
         assertNotNull(signature);
 
         assertTrue(CryptoToolkit.verifySignaturePKCS1(signature, data, cert, "RSA/NONE/PKCS1Padding", "BC"));
@@ -532,7 +536,8 @@ public class CryptoToolkitTestCase {
     public void testSignVerifyPKCS7()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
-               CertStoreException, InvalidAlgorithmParameterException {
+               CertStoreException, InvalidAlgorithmParameterException,
+               OperatorCreationException {
 
         String alias = "12d7d9ce-22e1-4b44-9186-12df32a9cd71";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
@@ -555,10 +560,11 @@ public class CryptoToolkitTestCase {
     public void testSignVerifyPKCS7Invalid()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
-               CertStoreException, InvalidAlgorithmParameterException {
+               CertStoreException, InvalidAlgorithmParameterException,
+               OperatorCreationException {
 
         thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage(SecurityContext.getMessage("CRYPTO_ERR_INVALID_HASH"));
+        thrown.expectMessage("Unknown signature type requested: INVALID");
 
         CryptoToolkit.signDataPKCS7(null, null, null, "invalid", true, true);
     }
@@ -567,7 +573,8 @@ public class CryptoToolkitTestCase {
     public void testSignVerifyPKCS7Alternate()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
-               CertStoreException, InvalidAlgorithmParameterException {
+               CertStoreException, InvalidAlgorithmParameterException,
+               OperatorCreationException {
 
         String alias = "12d7d9ce-22e1-4b44-9186-12df32a9cd71";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
@@ -580,7 +587,7 @@ public class CryptoToolkitTestCase {
             -97, 91, -72, -127, -33, 76, 6, 89, -100, -15,
             -110, 26, -34, 41, 9, 22, 109, 16, 60, -2
         };
-        byte[] signature = CryptoToolkit.signDataPKCS7(data, cert, privateKey, CryptoToolkit.SHA1_DIGEST_ALGORITHM, true, true);
+        byte[] signature = CryptoToolkit.signDataPKCS7(data, cert, privateKey, CryptoToolkit.SHA1RSA_DIGEST_ALGORITHM, true, true);
         assertNotNull(signature);
 
         assertTrue(CryptoToolkit.verifySignaturePKCS7(signature, data, cert));

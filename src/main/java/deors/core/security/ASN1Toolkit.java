@@ -1,12 +1,17 @@
 package deors.core.security;
 
+import static deors.core.security.CryptoToolkit.MD5_HASHING_ALGORITHM;
+import static deors.core.security.CryptoToolkit.SHA1_HASHING_ALGORITHM;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OutputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
@@ -31,16 +36,6 @@ import org.bouncycastle.cms.CMSSignedDataGenerator;
 final class ASN1Toolkit {
 
     /**
-     * Code for the MD5 digest algorithm.
-     */
-    private static final String MD5_DIGEST_ALGORITHM = "md5"; //$NON-NLS-1$
-
-    /**
-     * Code for the SHA1 digest algorithm.
-     */
-    private static final String SHA1_DIGEST_ALGORITHM = "sha1"; //$NON-NLS-1$
-
-    /**
      * Tag number for directoryName subject alternative name.
      */
     private static final Integer SUBJECT_ALT_NAMES_TAG_DIRECTORY_NAME = Integer.valueOf(4);
@@ -53,34 +48,34 @@ final class ASN1Toolkit {
     }
 
     /**
-     * Parses a DER sequence to obtain the CRL distribution points contained in it.
+     * Parses an ASN.1 sequence to obtain the CRL distribution points contained in it.
      *
-     * @param derSequence the DER sequence containing distribution points information
+     * @param asn1Sequence the ASN.1 sequence containing distribution points information
      *
      * @return the CRL distribution points
      */
-    static List<CRLDistributionPoint> parseCRLDistributionPoints(DERSequence derSequence) {
+    static List<CRLDistributionPoint> parseCRLDistributionPoints(ASN1Sequence asn1Sequence) {
 
         List<CRLDistributionPoint> distributionPoints = new ArrayList<>();
 
-        if (derSequence == null) {
+        if (asn1Sequence == null) {
             return distributionPoints;
         }
 
-        for (int i = 0; i < derSequence.size(); i++) {
+        for (int i = 0; i < asn1Sequence.size(); i++) {
 
-            ASN1Sequence asn1Sequence = (ASN1Sequence) derSequence.getObjectAt(i);
+            ASN1Sequence asn1SectionSequence = (ASN1Sequence) asn1Sequence.getObjectAt(i);
 
-            distributionPoints.addAll(parseCRLDistributionPointsSection(asn1Sequence));
+            distributionPoints.addAll(parseCRLDistributionPointsSection(asn1SectionSequence));
         }
 
         return distributionPoints;
     }
 
     /**
-     * Parses a sequence containing distribution points information.
+     * Parses an ASN.1 sequence containing distribution points information.
      *
-     * @param asn1Sequence sequence containing distribution points information
+     * @param asn1Sequence the ASN.1 sequence containing distribution points information
      *
      * @return the CRL distribution points contained in the sequence
      */
@@ -90,7 +85,7 @@ final class ASN1Toolkit {
         final int tagUniformResourceIdentifier = 6;
         final int tagDirectoryName = 4;
 
-        List<CRLDistributionPoint> distPoints = new ArrayList<>();
+        List<CRLDistributionPoint> distributionPoints = new ArrayList<>();
 
         for (int j = 0; j < asn1Sequence.size(); j++) {
 
@@ -105,21 +100,21 @@ final class ASN1Toolkit {
 
             if (tagged2.getTagNo() == tagUniformResourceIdentifier) {
 
-                distPoints.add(parseCRLinURL(tagged2));
+                distributionPoints.add(parseCRLinURL(tagged2));
 
             } else if (tagged2.getTagNo() == tagDirectoryName) {
 
-                distPoints.add(parseCRLinDirectory(tagged2));
+                distributionPoints.add(parseCRLinDirectory(tagged2));
             }
         }
 
-        return distPoints;
+        return distributionPoints;
     }
 
     /**
-     * Parses an object containing CRL in URL information.
+     * Parses an ASN.1 tagged object containing CRL in URL information.
      *
-     * @param asn1Object the object
+     * @param asn1Object the ASN.1 tagged object
      *
      * @return the CRL distribution point
      */
@@ -131,7 +126,7 @@ final class ASN1Toolkit {
 
         byte[] tagOctects = tagOct.getOctets();
 
-        DERIA5String ia5String = new DERIA5String(tagOctects);
+        DERIA5String ia5String = new DERIA5String(new String(tagOctects));
 
         type = CRLDistributionPoint.CRL_IN_URL;
         location = ia5String.getString();
@@ -140,9 +135,9 @@ final class ASN1Toolkit {
     }
 
     /**
-     * Parses an object containing CRL in X.500 directory information.
+     * Parses an ASN.1 tagged object containing CRL in X.500 directory information.
      *
-     * @param asn1Object the object
+     * @param asn1Object the ASN.1 tagged object
      *
      * @return the CRL distribution point
      */
@@ -153,7 +148,7 @@ final class ASN1Toolkit {
 
         int type;
         String location;
-        DERSequence tagSeq = (DERSequence) asn1Object.getObject();
+        ASN1Sequence tagSeq = (ASN1Sequence) asn1Object.getObject();
 
         StringBuilder sb = new StringBuilder();
 
@@ -164,11 +159,11 @@ final class ASN1Toolkit {
 
             for (int l = 0; l < tagSeqSet.size(); l++) {
 
-                DERSequence tagSeqSetSeq = (DERSequence) tagSeqSet.getObjectAt(l);
+                ASN1Sequence tagSeqSetSeq = (ASN1Sequence) tagSeqSet.getObjectAt(l);
                 Object o = tagSeqSetSeq.getObjectAt(1);
 
-                DERObjectIdentifier oid =
-                    (DERObjectIdentifier) tagSeqSetSeq.getObjectAt(0);
+                ASN1ObjectIdentifier oid =
+                    (ASN1ObjectIdentifier) tagSeqSetSeq.getObjectAt(0);
 
                 String oidName = oid.getId();
                 String oidValue = null;
@@ -205,36 +200,41 @@ final class ASN1Toolkit {
     }
 
     /**
-     * Parses a DER sequence to obtain the subject alternative names contained in it.
+     * Parses an ASN.1 sequence to obtain the subject alternative names contained in it.
      *
-     * @param derSequence the DER sequence containing subject alternative names
+     * @param asn1Sequence the ASN.1 sequence containing subject alternative names
      *
      * @return the subject alternative names
      */
-    static Map<Integer, Map<String, String>> parseSubjectAlternativeNames(DERSequence derSequence) {
+    static Map<Integer, Map<String, String>> parseSubjectAlternativeNames(ASN1Sequence asn1Sequence) {
 
         Map<Integer, Map<String, String>> tags = new HashMap<>();
 
-        for (int i = 0; i < derSequence.size(); i++) {
+        for (int i = 0; i < asn1Sequence.size(); i++) {
 
-            DERTaggedObject asn1Object = (DERTaggedObject) derSequence.getObjectAt(i);
+            ASN1Encodable asn1Object = asn1Sequence.getObjectAt(i);
 
-            Integer tagNumber = Integer.valueOf(asn1Object.getTagNo());
+            if (asn1Object instanceof DERTaggedObject) {
 
-            tags.put(tagNumber, parseNameEntry(asn1Object));
+                DERTaggedObject taggedObject = (DERTaggedObject) asn1Object;
+
+                Integer tagNumber = Integer.valueOf(taggedObject.getTagNo());
+
+                tags.put(tagNumber, parseNameEntry(taggedObject));
+            }
         }
 
         return tags;
     }
 
     /**
-     * Parses a name entry.
+     * Parses an ASN.1 tagged object holding information for a name entry.
      *
-     * @param asn1Object the object
+     * @param asn1Object the ASN.1 tagged object
      *
      * @return map with the subject alternative names contained in the entry
      */
-    private static Map<String, String> parseNameEntry(DERTaggedObject asn1Object) {
+    private static Map<String, String> parseNameEntry(ASN1TaggedObject asn1Object) {
 
         Map<String, String> tagData = new HashMap<>();
 
@@ -245,18 +245,18 @@ final class ASN1Toolkit {
             String value = new String(tagOctetString.getOctets());
             tagData.put(value, value);
 
-        } else if (asn1Object.getObject() instanceof DERSequence) {
+        } else if (asn1Object.getObject() instanceof ASN1Sequence) {
 
-            DERSequence tagSeq = (DERSequence) asn1Object.getObject();
+            ASN1Sequence tagSeq = (ASN1Sequence) asn1Object.getObject();
 
             for (int j = 0; j < tagSeq.size(); j++) {
 
-                if (tagSeq.getObjectAt(j) instanceof DERObjectIdentifier) {
+                if (tagSeq.getObjectAt(j) instanceof ASN1ObjectIdentifier) {
 
-                    DERObjectIdentifier oid = (DERObjectIdentifier) tagSeq.getObjectAt(j);
+                    ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) tagSeq.getObjectAt(j);
                     String oidName = oid.getId();
 
-                    if (j + 1 < tagSeq.size()) {
+                    if (j + 1 < tagSeq.size() && tagSeq.getObjectAt(j + 1) instanceof DERTaggedObject) {
 
                         DERTaggedObject tag = (DERTaggedObject) tagSeq.getObjectAt(j + 1);
                         Object o = tag.getObject();
@@ -291,10 +291,10 @@ final class ASN1Toolkit {
 
                     for (int k = 0; k < set.size(); k++) {
 
-                        DERSequence seq = (DERSequence) set.getObjectAt(k);
+                        ASN1Sequence seq = (ASN1Sequence) set.getObjectAt(k);
                         Object o = seq.getObjectAt(1);
 
-                        DERObjectIdentifier oid = (DERObjectIdentifier) seq.getObjectAt(0);
+                        ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq.getObjectAt(0);
                         String oidName = oid.getId();
 
                         if (o instanceof DERPrintableString) {
@@ -331,25 +331,25 @@ final class ASN1Toolkit {
     }
 
     /**
-     * Parses a DER sequence to obtain the subject directory name contained in it.
+     * Parses an ASN.1 sequence to obtain the subject directory name contained in it.
      *
-     * @param mainSeq the main sequence
+     * @param asn1Sequence the ASN.1 sequence
      *
      * @return the subject directory name
      */
-    public static Map<String, String> parseSubjectDirectoryName(DERSequence mainSeq) {
+    static Map<String, String> parseSubjectDirectoryName(ASN1Sequence asn1Sequence) {
 
         final int tagDirectoryName = SUBJECT_ALT_NAMES_TAG_DIRECTORY_NAME.intValue();
 
-        for (int i = 0; i < mainSeq.size(); i++) {
+        for (int i = 0; i < asn1Sequence.size(); i++) {
 
-            DERTaggedObject tagged = (DERTaggedObject) mainSeq.getObjectAt(i);
+            DERTaggedObject tagged = (DERTaggedObject) asn1Sequence.getObjectAt(i);
 
             if (tagged.getTagNo() != tagDirectoryName) {
                 continue;
             }
 
-            DERSequence tagSeq = (DERSequence) tagged.getObject();
+            ASN1Sequence tagSeq = (ASN1Sequence) tagged.getObject();
 
             Map<String, String> tagData = new HashMap<String, String>();
 
@@ -359,10 +359,10 @@ final class ASN1Toolkit {
 
                 for (int k = 0; k < set.size(); k++) {
 
-                    DERSequence seq = (DERSequence) set.getObjectAt(k);
+                    ASN1Sequence seq = (ASN1Sequence) set.getObjectAt(k);
                     Object o = seq.getObjectAt(1);
 
-                    DERObjectIdentifier oid = (DERObjectIdentifier) seq.getObjectAt(0);
+                    ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq.getObjectAt(0);
                     String oidName = oid.getId();
 
                     if (o instanceof DERPrintableString) {
@@ -407,16 +407,16 @@ final class ASN1Toolkit {
      * @return the ASN.1 signature
      *
      * @throws java.io.IOException an I/O exception
-     * @throws IllegalArgumentException the hash algorithm requested is not valid
+     * @throws java.lang.IllegalArgumentException the hash algorithm requested is not valid
      */
     static byte[] createASN1Signature(byte[] hash, String hashingAlgorithm)
         throws java.io.IOException {
 
         ASN1EncodableVector idSeq = new ASN1EncodableVector();
 
-        if (hashingAlgorithm.equals(MD5_DIGEST_ALGORITHM)) {
+        if (hashingAlgorithm.equals(MD5_HASHING_ALGORITHM)) {
             idSeq.add(new DERObjectIdentifier(CMSSignedDataGenerator.DIGEST_MD5));
-        } else if (hashingAlgorithm.equals(SHA1_DIGEST_ALGORITHM)) {
+        } else if (hashingAlgorithm.equals(SHA1_HASHING_ALGORITHM)) {
             idSeq.add(new DERObjectIdentifier(CMSSignedDataGenerator.DIGEST_SHA1));
         } else {
             throw new IllegalArgumentException(SecurityContext.getMessage("CRYPTO_ERR_INVALID_HASH")); //$NON-NLS-1$

@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
 
 import deors.core.directory.DirectoryException;
 import deors.core.directory.DirectoryManager;
@@ -246,13 +246,13 @@ public final class CertificateToolkit {
      *
      * @return the certificate
      *
-     * @throws java.security.cert.CertificateException there is a problem reading the certificate
-     *                                                 file
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.cert.CertificateException there is a problem reading the
+     *                                                 certificate file
      */
     public static X509Certificate readX509Certificate(InputStream isCertificate)
-        throws java.security.cert.CertificateException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.cert.CertificateException {
 
         CertificateFactory certFactory = CertificateFactory.getInstance(CERTIFICATE_TYPE);
         X509Certificate cert = (X509Certificate) certFactory.generateCertificate(isCertificate);
@@ -268,13 +268,13 @@ public final class CertificateToolkit {
      *
      * @return the certificates
      *
-     * @throws java.security.cert.CertificateException there is a problem reading the certificate
-     *                                                 file
      * @throws java.io.IOException an I/O exception
+     * @throws java.security.cert.CertificateException there is a problem reading the
+     *                                                 certificate file
      */
     public static List<X509Certificate> readX509Certificates(InputStream isCertificate)
-        throws java.security.cert.CertificateException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.cert.CertificateException {
 
         CertificateFactory certFactory = CertificateFactory.getInstance(CERTIFICATE_TYPE);
         Collection certs = certFactory.generateCertificates(isCertificate);
@@ -295,18 +295,18 @@ public final class CertificateToolkit {
      *
      * @return the key store
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the key algorithm is not supported
      * @throws java.security.KeyStoreException there is a problem creating the key store
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
-     * @throws java.io.IOException an I/O exception
      */
     public static KeyStore readJKSKeyStore(InputStream isCertificate, char[] password)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.KeyStoreException,
-               java.security.cert.CertificateException,
-               java.io.IOException {
+               java.security.cert.CertificateException {
 
         KeyStore ks = KeyStore.getInstance(KEY_STORE_JKS, JCE_SECURITY_PROVIDER);
         ks.load(isCertificate, password);
@@ -324,18 +324,18 @@ public final class CertificateToolkit {
      *
      * @return the key store
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.NoSuchAlgorithmException the key algorithm is not supported
      * @throws java.security.KeyStoreException there is a problem creating the key store
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
-     * @throws java.io.IOException an I/O exception
      */
     public static KeyStore readPKCS12KeyStore(InputStream isCertificate, char[] password)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.NoSuchAlgorithmException,
                java.security.KeyStoreException,
-               java.security.cert.CertificateException,
-               java.io.IOException {
+               java.security.cert.CertificateException {
 
         KeyStore ks = KeyStore.getInstance(KEY_STORE_P12, JSSE_SECURITY_PROVIDER);
         ks.load(isCertificate, password);
@@ -441,64 +441,20 @@ public final class CertificateToolkit {
     }
 
     /**
-     * Parses a <code>X509Certificate</code> object and returns the CRL distribution points for
-     * the certificate.
-     *
-     * @param cert the certificate
-     *
-     * @return the CRL distribution points
-     *
-     * @throws java.io.IOException an I/O exception
-     */
-    public static List<CRLDistributionPoint> getCRLDistributionPoints(X509Certificate cert)
-        throws java.io.IOException {
-
-        byte[] extension = cert.getExtensionValue(OID_EXTENSION_CRL_DISTRIBUTION_POINTS);
-
-        DERSequence mainSeq = null;
-        ASN1InputStream a1is = null;
-
-        try {
-            if (extension != null && extension.length != 0) {
-
-                ByteArrayInputStream bais = new ByteArrayInputStream(extension);
-                a1is = new ASN1InputStream(bais);
-
-                DEROctetString mainOct = (DEROctetString) a1is.readObject();
-
-                byte[] octects = mainOct.getOctets();
-
-                bais = new ByteArrayInputStream(octects);
-
-                a1is.close();
-                a1is = new ASN1InputStream(bais);
-
-                mainSeq = (DERSequence) a1is.readObject();
-            }
-        } finally {
-            if (a1is != null) {
-                a1is.close();
-            }
-        }
-
-        return ASN1Toolkit.parseCRLDistributionPoints(mainSeq);
-    }
-
-    /**
      * Downloads a CRL from an URL.
      *
      * @param urlName the URL to the CRL
      *
      * @return the CRL
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException an exception creating the certificate factory
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      */
     public static X509CRL getCRLFromURL(String urlName)
-        throws java.security.cert.CertificateException,
-               java.security.cert.CRLException,
-               java.io.IOException {
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
+               java.security.cert.CRLException {
 
         URL url = new URL(urlName);
 
@@ -543,15 +499,15 @@ public final class CertificateToolkit {
      *
      * @return the CRL or <code>null</code> if the CRL was not found in the configured directory
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException an exception creating the certificate factory
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      * @throws deors.core.directory.DirectoryException a directory exception
      */
     public static X509CRL getCRLFromX500Directory(String crlDN)
-        throws java.security.cert.CertificateException,
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
                deors.core.directory.DirectoryException {
 
         return getCRLFromX500Directory(crlDN, DEFAULT_LDAP_HOST, DEFAULT_LDAP_PORT);
@@ -566,15 +522,15 @@ public final class CertificateToolkit {
      *
      * @return the CRL or <code>null</code> if the CRL was not found in the given directory
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException an exception creating the certificate factory
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      * @throws deors.core.directory.DirectoryException a directory exception
      */
     public static X509CRL getCRLFromX500Directory(String crlDN, String dirHost, int dirPort)
-        throws java.security.cert.CertificateException,
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
                deors.core.directory.DirectoryException {
 
         DirectoryManager dirMgr = new DirectoryManager(dirHost, dirPort);
@@ -590,6 +546,24 @@ public final class CertificateToolkit {
                 is.close();
             }
         }
+    }
+
+    /**
+     * Parses a <code>X509Certificate</code> object and returns the CRL distribution points for
+     * the certificate.
+     *
+     * @param cert the certificate
+     *
+     * @return the CRL distribution points
+     *
+     * @throws java.io.IOException an I/O exception
+     */
+    public static List<CRLDistributionPoint> getCRLDistributionPoints(X509Certificate cert)
+        throws java.io.IOException {
+
+        byte[] extensionData = cert.getExtensionValue(OID_EXTENSION_CRL_DISTRIBUTION_POINTS);
+
+        return ASN1Toolkit.parseCRLDistributionPoints(convertExtensionData(extensionData));
     }
 
     /**
@@ -609,35 +583,9 @@ public final class CertificateToolkit {
     public static Map<Integer, Map<String, String>> getSubjectAlternativeNames(X509Certificate cert)
         throws java.io.IOException {
 
-        byte[] extension = cert.getExtensionValue(OID_EXTENSION_SUBJECT_ALTERNATIVE_NAMES);
+        byte[] extensionData = cert.getExtensionValue(OID_EXTENSION_SUBJECT_ALTERNATIVE_NAMES);
 
-        if (extension == null || extension.length == 0) {
-            return null;
-        }
-
-        ASN1InputStream a1is = null;
-
-        try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(extension);
-            a1is = new ASN1InputStream(bais);
-
-            DEROctetString mainOct = (DEROctetString) a1is.readObject();
-
-            byte[] octects = mainOct.getOctets();
-
-            bais = new ByteArrayInputStream(octects);
-
-            a1is.close();
-            a1is = new ASN1InputStream(bais);
-
-            DERSequence mainSeq = (DERSequence) a1is.readObject();
-
-            return ASN1Toolkit.parseSubjectAlternativeNames(mainSeq);
-        } finally {
-            if (a1is != null) {
-                a1is.close();
-            }
-        }
+        return ASN1Toolkit.parseSubjectAlternativeNames(convertExtensionData(extensionData));
     }
 
     /**
@@ -657,30 +605,42 @@ public final class CertificateToolkit {
     public static Map<String, String> getSubjectDirectoryName(X509Certificate cert)
         throws java.io.IOException {
 
-        byte[] extension = cert.getExtensionValue(OID_EXTENSION_SUBJECT_ALTERNATIVE_NAMES);
+        byte[] extensionData = cert.getExtensionValue(OID_EXTENSION_SUBJECT_ALTERNATIVE_NAMES);
 
-        if (extension == null || extension.length == 0) {
+        return ASN1Toolkit.parseSubjectDirectoryName(convertExtensionData(extensionData));
+    }
+
+    /**
+     * Converts a byte array containing data from a <code>X509Certificate</code>
+     * extension into an ASN.1 sequence.
+     *
+     * @param extensionData the byte array holding the extension data
+     *
+     * @return the extension data as an ASN.1 sequence
+     *
+     * @throws java.io.IOException an I/O exception
+     */
+    private static ASN1Sequence convertExtensionData(byte[] extensionData)
+        throws java.io.IOException {
+
+        if (extensionData == null || extensionData.length == 0) {
             return null;
         }
 
         ASN1InputStream a1is = null;
 
         try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(extension);
+            ByteArrayInputStream bais = new ByteArrayInputStream(extensionData);
             a1is = new ASN1InputStream(bais);
 
-            DEROctetString mainOct = (DEROctetString) a1is.readObject();
+            ASN1OctetString mainOct = (ASN1OctetString) a1is.readObject();
 
-            byte[] octects = mainOct.getOctets();
-
-            bais = new ByteArrayInputStream(octects);
+            bais = new ByteArrayInputStream(mainOct.getOctets());
 
             a1is.close();
             a1is = new ASN1InputStream(bais);
 
-            DERSequence mainSeq = (DERSequence) a1is.readObject();
-
-            return ASN1Toolkit.parseSubjectDirectoryName(mainSeq);
+            return (ASN1Sequence) a1is.readObject();
         } finally {
             if (a1is != null) {
                 a1is.close();
@@ -805,26 +765,28 @@ public final class CertificateToolkit {
      *
      * @return whether the certificate has not been revoked
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
      *                                                 file
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      * @throws deors.core.directory.DirectoryException a directory exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
      *
      * @see CertificateToolkit#DEFAULT_REVOCATION_VERIFICATION
      * @see CertificateToolkit#REVOCATION_VERIFICATION_CRL
      * @see CertificateToolkit#REVOCATION_VERIFICATION_OCSP
      */
     public static boolean verifyX509Certificate(X509Certificate cert, X509Certificate caCert)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
-               deors.core.directory.DirectoryException,
-               org.bouncycastle.ocsp.OCSPException {
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException,
+               deors.core.directory.DirectoryException {
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
         certs.add(cert);
@@ -841,26 +803,28 @@ public final class CertificateToolkit {
      *
      * @return whether the certificates has not been revoked
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
      *                                                 file
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      * @throws deors.core.directory.DirectoryException a directory exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
      *
      * @see CertificateToolkit#DEFAULT_REVOCATION_VERIFICATION
      * @see CertificateToolkit#REVOCATION_VERIFICATION_CRL
      * @see CertificateToolkit#REVOCATION_VERIFICATION_OCSP
      */
     public static boolean verifyX509Certificate(List<X509Certificate> certs, X509Certificate caCert)
-        throws java.security.NoSuchProviderException,
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
                java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
-               deors.core.directory.DirectoryException,
-               org.bouncycastle.ocsp.OCSPException {
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException,
+               deors.core.directory.DirectoryException {
 
         if (DEFAULT_REVOCATION_VERIFICATION.equals(REVOCATION_VERIFICATION_CRL)) {
             return verifyX509CertificateUsingCRL(certs);
@@ -880,16 +844,16 @@ public final class CertificateToolkit {
      *
      * @return whether the certificate has not been revoked
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
      *                                                 file
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      * @throws deors.core.directory.DirectoryException a directory exception
      */
     public static boolean verifyX509CertificateUsingCRL(X509Certificate cert)
-        throws java.security.cert.CertificateException,
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
                deors.core.directory.DirectoryException {
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
@@ -905,16 +869,16 @@ public final class CertificateToolkit {
      *
      * @return whether the certificates has not been revoked
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
      *                                                 file
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      * @throws deors.core.directory.DirectoryException a directory exception
      */
     public static boolean verifyX509CertificateUsingCRL(List<X509Certificate> certs)
-        throws java.security.cert.CertificateException,
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
                deors.core.directory.DirectoryException {
 
         return verifyX509CertificateUsingCRL(certs, DEFAULT_LDAP_HOST, DEFAULT_LDAP_PORT);
@@ -930,17 +894,17 @@ public final class CertificateToolkit {
      *
      * @return whether the certificate has not been revoked
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
      *                                                 file
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      * @throws deors.core.directory.DirectoryException a directory exception
      */
     public static boolean verifyX509CertificateUsingCRL(X509Certificate cert, String dirHost,
                                                         int dirPort)
-        throws java.security.cert.CertificateException,
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
                deors.core.directory.DirectoryException {
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
@@ -962,17 +926,17 @@ public final class CertificateToolkit {
      *
      * @return whether the certificates has not been revoked
      *
+     * @throws java.io.IOException an I/O exception
      * @throws java.security.cert.CertificateException there is a problem reading the certificate
      *                                                 file
      * @throws java.security.cert.CRLException an exception generating the CRL
-     * @throws java.io.IOException an I/O exception
      * @throws deors.core.directory.DirectoryException a directory exception
      */
     public static boolean verifyX509CertificateUsingCRL(List<X509Certificate> certs, String dirHost,
                                                         int dirPort)
-        throws java.security.cert.CertificateException,
+        throws java.io.IOException,
+               java.security.cert.CertificateException,
                java.security.cert.CRLException,
-               java.io.IOException,
                deors.core.directory.DirectoryException {
 
         for (X509Certificate cert : certs) {
@@ -1034,18 +998,22 @@ public final class CertificateToolkit {
      *
      * @return whether the certificate has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
      * @see OCSPToolkit#verifyX509CertificateUsingOCSP(X509Certificate, X509Certificate)
      */
     public static boolean verifyX509CertificateUsingOCSP(X509Certificate cert,
                                                          X509Certificate caCert)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return OCSPToolkit.verifyX509CertificateUsingOCSP(cert, caCert);
     }
@@ -1060,18 +1028,22 @@ public final class CertificateToolkit {
      *
      * @return whether the certificates has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
      * @see OCSPToolkit#verifyX509CertificateUsingOCSP(List, X509Certificate)
      */
     public static boolean verifyX509CertificateUsingOCSP(List<X509Certificate> certs,
                                                          X509Certificate caCert)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return OCSPToolkit.verifyX509CertificateUsingOCSP(certs, caCert);
     }
@@ -1086,18 +1058,22 @@ public final class CertificateToolkit {
      *
      * @return whether the certificate has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
      * @see OCSPToolkit#verifyX509CertificateUsingOCSP(X509Certificate, X509Certificate, String)
      */
     public static boolean verifyX509CertificateUsingOCSP(X509Certificate cert,
                                                          X509Certificate caCert, String ocspURL)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return OCSPToolkit.verifyX509CertificateUsingOCSP(cert, caCert, ocspURL);
     }
@@ -1113,18 +1089,22 @@ public final class CertificateToolkit {
      *
      * @return whether the certificates has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
      * @see OCSPToolkit#verifyX509CertificateUsingOCSP(List, X509Certificate, String)
      */
     public static boolean verifyX509CertificateUsingOCSP(List<X509Certificate> certs,
                                                          X509Certificate caCert, String ocspURL)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return OCSPToolkit.verifyX509CertificateUsingOCSP(certs, caCert, ocspURL);
     }
@@ -1142,10 +1122,12 @@ public final class CertificateToolkit {
      *
      * @return whether the certificate has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
      * @see OCSPToolkit#verifyX509CertificateUsingOCSP(X509Certificate, X509Certificate, String, X509Certificate, PrivateKey)
      */
@@ -1153,9 +1135,11 @@ public final class CertificateToolkit {
                                                          X509Certificate caCert, String ocspURL,
                                                          X509Certificate signingCert,
                                                          PrivateKey signingKey)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return OCSPToolkit.verifyX509CertificateUsingOCSP(
             cert, caCert, ocspURL, signingCert, signingKey);
@@ -1175,10 +1159,12 @@ public final class CertificateToolkit {
      *
      * @return whether the certificates has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      *
      * @see OCSPToolkit#verifyX509CertificateUsingOCSP(List, X509Certificate, String, X509Certificate, PrivateKey)
      */
@@ -1186,9 +1172,11 @@ public final class CertificateToolkit {
                                                          X509Certificate caCert, String ocspURL,
                                                          X509Certificate signingCert,
                                                          PrivateKey signingKey)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return OCSPToolkit.verifyX509CertificateUsingOCSP(
             certs, caCert, ocspURL, signingCert, signingKey);

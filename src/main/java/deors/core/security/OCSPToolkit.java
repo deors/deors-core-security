@@ -14,14 +14,21 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bouncycastle.ocsp.BasicOCSPResp;
-import org.bouncycastle.ocsp.CertificateID;
-import org.bouncycastle.ocsp.OCSPException;
-import org.bouncycastle.ocsp.OCSPReq;
-import org.bouncycastle.ocsp.OCSPReqGenerator;
-import org.bouncycastle.ocsp.OCSPResp;
-import org.bouncycastle.ocsp.OCSPRespStatus;
-import org.bouncycastle.ocsp.SingleResp;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
+import org.bouncycastle.cert.ocsp.BasicOCSPResp;
+import org.bouncycastle.cert.ocsp.CertificateID;
+import org.bouncycastle.cert.ocsp.OCSPException;
+import org.bouncycastle.cert.ocsp.OCSPReq;
+import org.bouncycastle.cert.ocsp.OCSPReqBuilder;
+import org.bouncycastle.cert.ocsp.OCSPResp;
+import org.bouncycastle.cert.ocsp.SingleResp;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.DigestCalculator;
+import org.bouncycastle.operator.DigestCalculatorProvider;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
+import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 
 /**
  * Toolkit methods for verifying X.509 certificates using OCSP.
@@ -102,6 +109,7 @@ final class OCSPToolkit {
      * Default constructor. This class is a toolkit and therefore it cannot be instantiated.
      */
     private OCSPToolkit() {
+
         super();
     }
 
@@ -114,16 +122,20 @@ final class OCSPToolkit {
      *
      * @return whether the certificate has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     static boolean verifyX509CertificateUsingOCSP(X509Certificate cert,
                                                   X509Certificate caCert)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
         certs.add(cert);
@@ -140,16 +152,20 @@ final class OCSPToolkit {
      *
      * @return whether the certificates has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     static boolean verifyX509CertificateUsingOCSP(List<X509Certificate> certs,
                                                   X509Certificate caCert)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return verifyX509CertificateUsingOCSP(certs, caCert, DEFAULT_OCSP_RESPONDER_URL, null, null);
     }
@@ -164,16 +180,20 @@ final class OCSPToolkit {
      *
      * @return whether the certificate has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     static boolean verifyX509CertificateUsingOCSP(X509Certificate cert,
                                                   X509Certificate caCert, String ocspURL)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
         certs.add(cert);
@@ -191,16 +211,20 @@ final class OCSPToolkit {
      *
      * @return whether the certificates has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     static boolean verifyX509CertificateUsingOCSP(List<X509Certificate> certs,
                                                   X509Certificate caCert, String ocspURL)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         return verifyX509CertificateUsingOCSP(certs, caCert, ocspURL, null, null);
     }
@@ -218,18 +242,22 @@ final class OCSPToolkit {
      *
      * @return whether the certificate has not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     static boolean verifyX509CertificateUsingOCSP(X509Certificate cert,
                                                   X509Certificate caCert, String ocspURL,
                                                   X509Certificate signingCert,
                                                   PrivateKey signingKey)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         List<X509Certificate> certs = new ArrayList<X509Certificate>();
         certs.add(cert);
@@ -250,45 +278,64 @@ final class OCSPToolkit {
      *
      * @return whether the certificates have not been revoked
      *
-     * @throws java.security.NoSuchProviderException the security provider is not supported
      * @throws java.io.IOException an I/O exception
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws java.security.NoSuchProviderException the security provider is not supported
+     * @throws java.security.cert.CertificateEncodingException error with certificate encoding
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
     static boolean verifyX509CertificateUsingOCSP(List<X509Certificate> certs,
                                                   X509Certificate caCert, String ocspURL,
                                                   X509Certificate signingCert,
                                                   PrivateKey signingKey)
-        throws java.security.NoSuchProviderException,
-               java.io.IOException,
-               org.bouncycastle.ocsp.OCSPException {
+        throws java.io.IOException,
+               java.security.NoSuchProviderException,
+               java.security.cert.CertificateEncodingException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
-        final int hundred = 100;
+        final int httpOk = 200;
 
         DataOutputStream dataOut = null;
 
         try {
             // the OCSP request is built
-            OCSPReqGenerator ocspGenerator = new OCSPReqGenerator();
+            OCSPReqBuilder ocspBuilder = new OCSPReqBuilder();
+
+            // provide the digest calculator
+            JcaDigestCalculatorProviderBuilder digestBuilder =
+                new JcaDigestCalculatorProviderBuilder();
+            DigestCalculatorProvider digestProvider =
+                digestBuilder.build();
+            DigestCalculator digestCalculator =
+                digestProvider.get(CertificateID.HASH_SHA1);
 
             // the certificates to be verified are added to the request
             for (X509Certificate cert : certs) {
-                ocspGenerator.addRequest(
-                    new CertificateID(CertificateID.HASH_SHA1, caCert, cert.getSerialNumber()));
+                ocspBuilder.addRequest(
+                    new CertificateID(
+                        digestCalculator,
+                        new JcaX509CertificateHolder(caCert),
+                        cert.getSerialNumber()));
             }
 
             // generates the OCSP request
             OCSPReq request = null;
 
             if (signingCert == null || signingKey == null) {
-                request = ocspGenerator.generate();
+                request = ocspBuilder.build();
             } else {
                 // the request is digitally signed
-                ocspGenerator.setRequestorName(signingCert.getSubjectX500Principal());
+                ocspBuilder.setRequestorName(
+                    new JcaX509CertificateHolder(signingCert).getSubject());
+
+                ContentSigner signer = new JcaContentSignerBuilder(OCSP_SIGNATURE_ALGORITHM)
+                    .build(signingKey);
 
                 request =
-                    ocspGenerator.generate(OCSP_SIGNATURE_ALGORITHM, signingKey,
-                        new X509Certificate[] {signingCert}, SecurityToolkit.BC_SECURITY_PROVIDER);
+                    ocspBuilder.build(signer,
+                        new X509CertificateHolder[] {new JcaX509CertificateHolder(signingCert)});
             }
 
             // the OCSP request is sent
@@ -320,7 +367,7 @@ final class OCSPToolkit {
 
             // the HTTP response is read
             int httpStatus = httpconn.getResponseCode();
-            if (httpStatus / hundred != 2) {
+            if (httpStatus != httpOk) {
                 throw new java.io.IOException(SecurityContext.getMessage(
                     "CERT_ERR_OCSP_HTTP_RESPONSE_NOT_200", String.valueOf(httpStatus))); //$NON-NLS-1$
             }
@@ -331,9 +378,8 @@ final class OCSPToolkit {
             OCSPResp response = new OCSPResp(is);
 
             int responseStatus = response.getStatus();
-
-            if (responseStatus == OCSPRespStatus.SUCCESSFUL) {
-                return processSuccessfulResponse(response);
+            if (responseStatus == OCSPResp.SUCCESSFUL) {
+                return processSuccessfulResponse(response, caCert);
             } else {
                 throw processErrorResponse(responseStatus);
             }
@@ -352,32 +398,32 @@ final class OCSPToolkit {
      * Process a successful response.
      *
      * @param response the OCSP response
+     * @param caCert the certificate of the CA that issued all the certificates that will be
+     *               verified
      *
      * @return whether the certificates have not been revoked
      *
      * @throws java.security.NoSuchProviderException the security provider is not supported
-     * @throws org.bouncycastle.ocsp.OCSPException an exception preparing the OCSP request or
-     *                                             parsing the OCSP response
+     * @throws org.bouncycastle.cert.ocsp.OCSPException an exception preparing the OCSP request
+     *                                                  or parsing the OCSP response
+     * @throws org.bouncycastle.operator.OperatorCreationException error creating the operator
      */
-    private static boolean processSuccessfulResponse(OCSPResp response)
-        throws OCSPException,
-               NoSuchProviderException {
+    private static boolean processSuccessfulResponse(OCSPResp response,
+                                                     X509Certificate caCert)
+        throws java.security.NoSuchProviderException,
+               org.bouncycastle.cert.ocsp.OCSPException,
+               org.bouncycastle.operator.OperatorCreationException {
 
         BasicOCSPResp basicResponse = (BasicOCSPResp) response.getResponseObject();
 
         // validates the OCSP response signature
-        X509Certificate[] responseCertChain =
-            basicResponse.getCerts(SecurityToolkit.BC_SECURITY_PROVIDER);
-        if (responseCertChain.length != 0) {
-            X509Certificate responseSignerCert = responseCertChain[0];
-            java.security.PublicKey responseSignerKey = responseSignerCert.getPublicKey();
-            boolean responseSignatureValid =
-                basicResponse.verify(responseSignerKey, SecurityToolkit.BC_SECURITY_PROVIDER);
+        boolean responseSignatureValid =
+            basicResponse.isSignatureValid(
+                new JcaContentVerifierProviderBuilder().build(caCert));
 
-            if (!responseSignatureValid) {
-                throw new OCSPException(
-                    SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_SIGNATURE_NOT_VALID")); //$NON-NLS-1$
-            }
+        if (!responseSignatureValid) {
+            throw new OCSPException(
+                SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_SIGNATURE_NOT_VALID")); //$NON-NLS-1$
         }
 
         SingleResp[] singleResponses = basicResponse.getResponses();
@@ -387,7 +433,7 @@ final class OCSPToolkit {
                 SingleResp singleResponse = singleResponses[i];
 
                 Object certStatus = singleResponse.getCertStatus();
-                if (certStatus instanceof org.bouncycastle.ocsp.RevokedStatus) {
+                if (certStatus instanceof org.bouncycastle.cert.ocsp.RevokedStatus) {
                     // response status REVOKED (1)
                     return false;
                 }
@@ -408,15 +454,15 @@ final class OCSPToolkit {
 
         OCSPException error = null;
 
-        if (responseStatus == OCSPRespStatus.MALFORMED_REQUEST) {
+        if (responseStatus == OCSPResp.MALFORMED_REQUEST) {
             error = new OCSPException(SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_STATUS_1")); //$NON-NLS-1$
-        } else if (responseStatus == OCSPRespStatus.INTERNAL_ERROR) {
+        } else if (responseStatus == OCSPResp.INTERNAL_ERROR) {
             error = new OCSPException(SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_STATUS_2")); //$NON-NLS-1$
-        } else if (responseStatus == OCSPRespStatus.TRY_LATER) {
+        } else if (responseStatus == OCSPResp.TRY_LATER) {
             error = new OCSPException(SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_STATUS_3")); //$NON-NLS-1$
-        } else if (responseStatus == OCSPRespStatus.SIGREQUIRED) {
+        } else if (responseStatus == OCSPResp.SIG_REQUIRED) {
             error = new OCSPException(SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_STATUS_5")); //$NON-NLS-1$
-        } else if (responseStatus == OCSPRespStatus.UNAUTHORIZED) {
+        } else if (responseStatus == OCSPResp.UNAUTHORIZED) {
             error = new OCSPException(SecurityContext.getMessage("CERT_ERR_OCSP_RESPONSE_STATUS_6")); //$NON-NLS-1$
         }
 

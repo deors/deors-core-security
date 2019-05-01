@@ -97,6 +97,7 @@ public final class SSLTunnelSocketFactory
      * @param proxyPort the proxy port
      */
     public SSLTunnelSocketFactory(String proxyHost, int proxyPort) {
+
         super();
         this.factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         this.proxyHost = proxyHost;
@@ -112,8 +113,8 @@ public final class SSLTunnelSocketFactory
      * @param proxyUserName the proxy user name
      * @param proxyUserPassword the proxy user password
      */
-    public SSLTunnelSocketFactory(String proxyHost, int proxyPort, String proxyUserName,
-                                  String proxyUserPassword) {
+    public SSLTunnelSocketFactory(String proxyHost, int proxyPort,
+                                  String proxyUserName, String proxyUserPassword) {
         super();
         this.factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         this.proxyHost = proxyHost;
@@ -143,8 +144,42 @@ public final class SSLTunnelSocketFactory
      *
      * @param host the target host
      * @param port the target port
+     *
+     * @return the socket
+     *
+     * @throws java.io.IOException an I/O exception
+     */
+    public Socket createSocket(InetAddress host, int port)
+        throws java.io.IOException {
+
+        return createSocket(null, host.getHostName(), port, true);
+    }
+
+    /**
+     * Creates and returns a socket.
+     *
+     * @param host the target host
+     * @param port the target port
      * @param clientHost the client host (ignored)
      * @param clientPort the client port (ignored)
+     *
+     * @return the socket
+     *
+     * @throws java.io.IOException an I/O exception
+     */
+    public Socket createSocket(String host, int port, String clientHost, int clientPort)
+        throws java.io.IOException {
+
+        return createSocket(null, host, port, true);
+    }
+
+    /**
+     * Creates and returns a socket.
+     *
+     * @param host the target host
+     * @param port the target port
+     * @param clientHost the client host (ignored)
+     * @param clientPort the client host (ignored)
      *
      * @return the socket
      *
@@ -161,33 +196,18 @@ public final class SSLTunnelSocketFactory
      *
      * @param host the target host
      * @param port the target port
-     *
-     * @return the socket
-     *
-     * @throws java.io.IOException an I/O exception
-     */
-    public Socket createSocket(InetAddress host, int port) throws java.io.IOException {
-
-        return createSocket(null, host.getHostName(), port, true);
-    }
-
-    /**
-     * Creates and returns a socket.
-     *
-     * @param address the target host
-     * @param port the target port
-     * @param clientAddress the client host (ignored)
+     * @param clientHost the client host (ignored)
      * @param clientPort the client host (ignored)
      *
      * @return the socket
      *
      * @throws java.io.IOException an I/O exception
      */
-    public Socket createSocket(InetAddress address, int port, InetAddress clientAddress,
-                               int clientPort)
+    public Socket createSocket(InetAddress host, int port,
+                               InetAddress clientHost, int clientPort)
         throws java.io.IOException {
 
-        return createSocket(null, address.getHostName(), port, true);
+        return createSocket(null, host.getHostName(), port, true);
     }
 
     /**
@@ -225,6 +245,7 @@ public final class SSLTunnelSocketFactory
      * @param event the <code>HandshakeCompleted</code> event
      */
     public void handshakeCompleted(HandshakeCompletedEvent event) {
+
         // the cipher suite is: event.getCipherSuite()
         // the session id is: event.getSession()
         // the peer host is: event.getSession().getPeerHost()

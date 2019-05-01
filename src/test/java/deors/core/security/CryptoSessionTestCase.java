@@ -21,6 +21,7 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertStoreException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -31,6 +32,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
 import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -75,6 +77,7 @@ public class CryptoSessionTestCase {
         assertEquals("sha1prng", s1.getPrngAlgorithm());
         assertEquals("DESede", s1.getKeyGenAlgorithm());
         assertEquals(24, s1.getKeySizeInBytes());
+        assertEquals("MD5withRSA", s1.getDigestAlgorithm());
         assertEquals("md5", s1.getHashingAlgorithm());
         assertEquals("DESede/CBC/PKCS7Padding", s1.getSymmetricAlgorithm());
         assertEquals("RSA/NONE/PKCS1Padding", s1.getAsymmetricAlgorithm());
@@ -83,6 +86,7 @@ public class CryptoSessionTestCase {
         s1.setPrngAlgorithm("pa");
         s1.setKeyGenAlgorithm("ka");
         s1.setKeySizeInBytes(2);
+        s1.setDigestAlgorithm("da");
         s1.setHashingAlgorithm("ha");
         s1.setSymmetricAlgorithm("sa");
         s1.setAsymmetricAlgorithm("aa");
@@ -91,6 +95,7 @@ public class CryptoSessionTestCase {
         assertEquals("pa", s1.getPrngAlgorithm());
         assertEquals("ka", s1.getKeyGenAlgorithm());
         assertEquals(2, s1.getKeySizeInBytes());
+        assertEquals("da", s1.getDigestAlgorithm());
         assertEquals("ha", s1.getHashingAlgorithm());
         assertEquals("sa", s1.getSymmetricAlgorithm());
         assertEquals("aa", s1.getAsymmetricAlgorithm());
@@ -100,12 +105,13 @@ public class CryptoSessionTestCase {
     public void testCustomSession() {
 
         CryptoSession s1 = new CryptoSession(
-            "sp", "ha", "pa", "ka", 2, "sa", "aa");
+            "sp", "da", "ha", "pa", "ka", 2, "sa", "aa");
 
         assertEquals("sp", s1.getSecurityProvider());
         assertEquals("pa", s1.getPrngAlgorithm());
         assertEquals("ka", s1.getKeyGenAlgorithm());
         assertEquals(2, s1.getKeySizeInBytes());
+        assertEquals("da", s1.getDigestAlgorithm());
         assertEquals("ha", s1.getHashingAlgorithm());
         assertEquals("sa", s1.getSymmetricAlgorithm());
         assertEquals("aa", s1.getAsymmetricAlgorithm());
@@ -118,6 +124,7 @@ public class CryptoSessionTestCase {
         assertEquals("pa", s2.getPrngAlgorithm());
         assertEquals("ka", s2.getKeyGenAlgorithm());
         assertEquals(8, s2.getKeySizeInBytes());
+        assertEquals("da", s2.getDigestAlgorithm());
         assertEquals("ha", s2.getHashingAlgorithm());
         assertEquals("sa", s2.getSymmetricAlgorithm());
         assertEquals("aa", s2.getAsymmetricAlgorithm());
@@ -131,12 +138,13 @@ public class CryptoSessionTestCase {
     public void testInvalidSession() {
 
         CryptoSession s1 = new CryptoSession(
-            null, null, null, null, 0, null, null);
+            null, null, null, null, null, 0, null, null);
 
         assertEquals("BC", s1.getSecurityProvider());
         assertEquals("sha1prng", s1.getPrngAlgorithm());
         assertEquals("DESede", s1.getKeyGenAlgorithm());
         assertEquals(24, s1.getKeySizeInBytes());
+        assertEquals("MD5withRSA", s1.getDigestAlgorithm());
         assertEquals("md5", s1.getHashingAlgorithm());
         assertEquals("DESede/CBC/PKCS7Padding", s1.getSymmetricAlgorithm());
         assertEquals("RSA/NONE/PKCS1Padding", s1.getAsymmetricAlgorithm());
@@ -152,6 +160,7 @@ public class CryptoSessionTestCase {
         assertEquals("pa", s1.getPrngAlgorithm());
         assertEquals("ka", s1.getKeyGenAlgorithm());
         assertEquals(2, s1.getKeySizeInBytes());
+        assertEquals("da", s1.getDigestAlgorithm());
         assertEquals("ha", s1.getHashingAlgorithm());
         assertEquals("sa", s1.getSymmetricAlgorithm());
         assertEquals("aa", s1.getAsymmetricAlgorithm());
@@ -167,6 +176,7 @@ public class CryptoSessionTestCase {
         assertEquals("sha1prng", s1.getPrngAlgorithm());
         assertEquals("DESede", s1.getKeyGenAlgorithm());
         assertEquals(24, s1.getKeySizeInBytes());
+        assertEquals("MD5withRSA", s1.getDigestAlgorithm());
         assertEquals("md5", s1.getHashingAlgorithm());
         assertEquals("DESede/CBC/PKCS7Padding", s1.getSymmetricAlgorithm());
         assertEquals("RSA/NONE/PKCS1Padding", s1.getAsymmetricAlgorithm());
@@ -182,6 +192,7 @@ public class CryptoSessionTestCase {
         assertEquals("pa", s1.getPrngAlgorithm());
         assertEquals("ka", s1.getKeyGenAlgorithm());
         assertEquals(24, s1.getKeySizeInBytes());
+        assertEquals("da", s1.getDigestAlgorithm());
         assertEquals("ha", s1.getHashingAlgorithm());
         assertEquals("sa", s1.getSymmetricAlgorithm());
         assertEquals("aa", s1.getAsymmetricAlgorithm());
@@ -199,6 +210,7 @@ public class CryptoSessionTestCase {
         assertEquals("pa", s1.getPrngAlgorithm());
         assertEquals("ka", s1.getKeyGenAlgorithm());
         assertEquals(2, s1.getKeySizeInBytes());
+        assertEquals("da", s1.getDigestAlgorithm());
         assertEquals("ha", s1.getHashingAlgorithm());
         assertEquals("sa", s1.getSymmetricAlgorithm());
         assertEquals("aa", s1.getAsymmetricAlgorithm());
@@ -216,6 +228,7 @@ public class CryptoSessionTestCase {
         assertEquals("sha1prng", s1.getPrngAlgorithm());
         assertEquals("DESede", s1.getKeyGenAlgorithm());
         assertEquals(24, s1.getKeySizeInBytes());
+        assertEquals("MD5withRSA", s1.getDigestAlgorithm());
         assertEquals("md5", s1.getHashingAlgorithm());
         assertEquals("DESede/CBC/PKCS7Padding", s1.getSymmetricAlgorithm());
         assertEquals("RSA/NONE/PKCS1Padding", s1.getAsymmetricAlgorithm());
@@ -233,6 +246,7 @@ public class CryptoSessionTestCase {
         assertEquals("pa", s1.getPrngAlgorithm());
         assertEquals("ka", s1.getKeyGenAlgorithm());
         assertEquals(24, s1.getKeySizeInBytes());
+        assertEquals("da", s1.getDigestAlgorithm());
         assertEquals("ha", s1.getHashingAlgorithm());
         assertEquals("sa", s1.getSymmetricAlgorithm());
         assertEquals("aa", s1.getAsymmetricAlgorithm());
@@ -403,7 +417,8 @@ public class CryptoSessionTestCase {
     @Test
     public void testEncryptDecryptStreamsSymmetric()
         throws NoSuchAlgorithmException, NoSuchProviderException, IOException,
-               NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+               NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
+               CertificateEncodingException, OperatorCreationException {
 
         SecretKey key = session.createSymmetricKey();
         byte[] data = new byte[] {
@@ -475,7 +490,8 @@ public class CryptoSessionTestCase {
     public void testSignVerifyPKCS7()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
-               CertStoreException, InvalidAlgorithmParameterException {
+               CertStoreException, InvalidAlgorithmParameterException,
+               OperatorCreationException {
 
         String alias = "12d7d9ce-22e1-4b44-9186-12df32a9cd71";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
@@ -498,7 +514,11 @@ public class CryptoSessionTestCase {
     public void testSignVerifyPKCS7Alternate()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
-               CertStoreException, InvalidAlgorithmParameterException {
+               CertStoreException, InvalidAlgorithmParameterException,
+               OperatorCreationException {
+
+        CryptoSession session2 = new CryptoSession(session);
+        session2.setDigestAlgorithm(CryptoToolkit.SHA1RSA_DIGEST_ALGORITHM);
 
         String alias = "12d7d9ce-22e1-4b44-9186-12df32a9cd71";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
@@ -511,9 +531,9 @@ public class CryptoSessionTestCase {
             -97, 91, -72, -127, -33, 76, 6, 89, -100, -15,
             -110, 26, -34, 41, 9, 22, 109, 16, 60, -2
         };
-        byte[] signature = session.signDataPKCS7(data, cert, privateKey, true, true);
+        byte[] signature = session2.signDataPKCS7(data, cert, privateKey, true, true);
         assertNotNull(signature);
 
-        assertTrue(session.verifySignaturePKCS7(signature, data, cert));
+        assertTrue(session2.verifySignaturePKCS7(signature, data, cert));
     }
 }
