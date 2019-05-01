@@ -24,9 +24,7 @@ import org.junit.runner.RunWith;
 
 import mockit.Mocked;
 import mockit.Verifications;
-import mockit.integration.junit4.JMockit;
 
-@RunWith(JMockit.class)
 public class SecurityToolkitTestCase {
 
     private static String proxyHost = null;

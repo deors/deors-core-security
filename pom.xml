@@ -16,37 +16,36 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <java.version>10</java.version>
+        <java.version>11</java.version>
 
         <deors-core.version>1.0-SNAPSHOT</deors-core.version>
 
         <activation.version>1.1.1</activation.version>
         <bouncycastle.version>1.46</bouncycastle.version>
-        <slf4j.version>1.7.5</slf4j.version>
-        <log4j.version>1.2.16</log4j.version>
-        <xstream.version>1.4.3</xstream.version>
+        <slf4j.version>1.7.26</slf4j.version>
+        <log4j.version>1.2.17</log4j.version>
+        <xstream.version>1.4.11.1</xstream.version>
 
-        <junit.version>5.2.0</junit.version>
-        <junit-platform.version>1.2.0</junit-platform.version>
+        <junit.version>5.4.1</junit.version>
+        <jmockit.version>1.45</jmockit.version>
+        <jacoco.version>0.8.3</jacoco.version>
+        <sonarjava.version>5.10.2.17019</sonarjava.version>
+        <pitest.version>1.4.5</pitest.version>
+        <pitest-junit5.version>0.8</pitest-junit5.version>
+        <dependency-check.version>4.0.2</dependency-check.version>
 
-        <jmockit.version>1.41</jmockit.version>
         <jmockit.path>${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar</jmockit.path>
-        <jmockit.utAgentConfig>-javaagent:${jmockit.path}</jmockit.utAgentConfig>
+        <jmockit.agentConfig>-javaagent:${jmockit.path}</jmockit.agentConfig>
 
-        <jacoco.version>0.8.1</jacoco.version>
         <jacoco.path>${settings.localRepository}/org/jacoco/org.jacoco.agent/${jacoco.version}/org.jacoco.agent-${jacoco.version}-runtime.jar</jacoco.path>
         <jacoco.utReport>${project.build.directory}/jacoco.exec</jacoco.utReport>
         <jacoco.itReport>${project.build.directory}/jacoco-it.exec</jacoco.itReport>
         <jacoco.utAgentConfig>-javaagent:${jacoco.path}=destfile=${jacoco.utReport}</jacoco.utAgentConfig>
         <jacoco.itAgentConfig>-javaagent:${jacoco.path}=destfile=${jacoco.itReport}</jacoco.itAgentConfig>
 
-        <jacoco-listeners.version>5.1.0.13090</jacoco-listeners.version>
-
-        <pitest.version>1.4.2</pitest.version>
-
         <compiler-plugin.version>3.8.0</compiler-plugin.version>
-        <surefire-plugin.version>2.22.0</surefire-plugin.version>
-        <failsafe-plugin.version>2.22.0</failsafe-plugin.version>
+        <surefire-plugin.version>2.22.1</surefire-plugin.version>
+        <failsafe-plugin.version>2.22.1</failsafe-plugin.version>
         <source-plugin.version>3.0.1</source-plugin.version>
         <javadoc-plugin.version>3.0.1</javadoc-plugin.version>
     </properties>
@@ -67,7 +66,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
-                    <argLine>${jmockit.utAgentConfig} ${jacoco.utAgentConfig}</argLine>
+                    <argLine>${jmockit.agentConfig} ${jacoco.utAgentConfig}</argLine>
                     <excludes>
                         <exclude>**/*IntegrationTestCase.java</exclude>
                     </excludes>
@@ -78,13 +77,6 @@
                         </property>
                     </properties>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-surefire-provider</artifactId>
-                        <version>${junit-platform.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -104,13 +96,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-surefire-provider</artifactId>
-                        <version>${junit-platform.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.pitest</groupId>
@@ -118,7 +103,7 @@
                 <version>${pitest.version}</version>
                 <configuration>
                     <jvmArgs>
-                        <value>${jmockit.utAgentConfig}</value>
+                        <value>${jmockit.agentConfig}</value>
                     </jvmArgs>
                     <excludedTests>
                         <param>*IntegrationTestCase</param>
@@ -127,10 +112,33 @@
                         <outputFormat>XML</outputFormat>
                     </outputFormats>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>${pitest-junit5.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <goals>
                             <goal>mutationCoverage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${dependency-check.version}</version>
+                <configuration>
+                    <format>ALL</format>
+                    <failBuildOnCVSS>5</failBuildOnCVSS>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -181,12 +189,12 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk16</artifactId>
+            <artifactId>bcprov-jdk15on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk16</artifactId>
+            <artifactId>bcmail-jdk15on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
@@ -248,7 +256,7 @@
         <dependency>
             <groupId>org.sonarsource.java</groupId>
             <artifactId>sonar-jacoco-listeners</artifactId>
-            <version>${jacoco-listeners.version}</version>
+            <version>${sonarjava.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
