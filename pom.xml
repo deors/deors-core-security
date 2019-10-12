@@ -32,7 +32,7 @@
         <sonarjava.version>5.10.2.17019</sonarjava.version>
         <pitest.version>1.4.5</pitest.version>
         <pitest-junit5.version>0.8</pitest-junit5.version>
-        <dependency-check.version>4.0.2</dependency-check.version>
+        <dependency-check.version>5.2.2</dependency-check.version>
 
         <jmockit.path>${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar</jmockit.path>
         <jmockit.agentConfig>-javaagent:${jmockit.path}</jmockit.agentConfig>
