@@ -16,23 +16,22 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <java.version>11</java.version>
+        <java.version>21</java.version>
 
         <deors-core.version>1.0-SNAPSHOT</deors-core.version>
 
         <activation.version>1.1.1</activation.version>
         <bouncycastle.version>1.61</bouncycastle.version>
-        <slf4j.version>1.7.26</slf4j.version>
-        <log4j.version>1.2.17</log4j.version>
-        <xstream.version>1.4.11.1</xstream.version>
+        
+        <logback.version>1.4.11</logback.version>
 
-        <junit.version>5.4.1</junit.version>
+        <junit.version>5.10.0</junit.version>
         <jmockit.version>1.45</jmockit.version>
-        <jacoco.version>0.8.3</jacoco.version>
+        <jacoco.version>0.8.10</jacoco.version>
         <sonarjava.version>5.10.2.17019</sonarjava.version>
-        <pitest.version>1.4.5</pitest.version>
-        <pitest-junit5.version>0.8</pitest-junit5.version>
-        <dependency-check.version>5.2.2</dependency-check.version>
+        <pitest.version>1.15.0</pitest.version>
+        <pitest-junit5.version>1.2.0</pitest-junit5.version>
+        <dependency-check.version>8.4.0</dependency-check.version>
 
         <jmockit.path>${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar</jmockit.path>
         <jmockit.agentConfig>-javaagent:${jmockit.path}</jmockit.agentConfig>
@@ -105,9 +104,9 @@
                     <jvmArgs>
                         <value>${jmockit.agentConfig}</value>
                     </jvmArgs>
-                    <excludedTests>
+                    <excludedTestClasses>
                         <param>*IntegrationTestCase</param>
-                    </excludedTests>
+                    </excludedTestClasses>
                     <outputFormats>
                         <outputFormat>XML</outputFormat>
                     </outputFormats>
@@ -197,29 +196,11 @@
             <artifactId>bcmail-jdk15on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
-            <version>${xstream.version}</version>
-            <scope>runtime</scope>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
         </dependency>
 
         <dependency>
