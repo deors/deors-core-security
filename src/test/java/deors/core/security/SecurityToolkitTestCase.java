@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -115,7 +116,8 @@ public class SecurityToolkitTestCase {
     }
 
     @Test
-    public void testURLConnectionForTunnelingNotSecure(@Mocked HttpsURLConnection urlconn) {
+    public void testURLConnectionForTunnelingNotSecure(
+        @Mocked HttpURLConnection urlconn) {
 
         assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
     }
@@ -132,7 +134,7 @@ public class SecurityToolkitTestCase {
 
     @Test
     public void testURLConnectionForTunnelingSecureProxy(
-        @Mocked HttpsURLConnection urlconn, @Mocked SSLTunnelSocketFactory factory) {
+        @Mocked HttpsURLConnection urlconn) {
 
         System.setProperty("https.proxyHost", "secureproxy");
         System.setProperty("https.proxyPort", "8080");
