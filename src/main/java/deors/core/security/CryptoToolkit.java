@@ -9,14 +9,10 @@ import java.security.Key;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.cert.CertStore;
-import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import javax.crypto.Cipher;
@@ -42,7 +38,6 @@ import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
-import org.bouncycastle.util.Store;
 
 import deors.core.commons.StringToolkit;
 
@@ -1359,13 +1354,13 @@ public final class CryptoToolkit {
         CMSSignedData signedData = new CMSSignedData(processableData, signature);
 
         SignerInformationStore signerStore = signedData.getSignerInfos();
-        Collection signers = signerStore.getSigners();
+        Collection<SignerInformation> signers = signerStore.getSigners();
 
         if (signers.size() == 0) {
             return false;
         }
 
-        SignerInformation signerInfo = (SignerInformation) signers.iterator().next();
+        SignerInformation signerInfo = signers.iterator().next();
 
         SignerInformationVerifier verifier =
             new JcaSimpleSignerInfoVerifierBuilder()
