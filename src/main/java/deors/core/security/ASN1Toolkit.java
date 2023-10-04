@@ -17,7 +17,6 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DERNull;
-import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERPrintableString;
 import org.bouncycastle.asn1.DERSequence;
@@ -415,14 +414,14 @@ final class ASN1Toolkit {
         ASN1EncodableVector idSeq = new ASN1EncodableVector();
 
         if (hashingAlgorithm.equals(MD5_HASHING_ALGORITHM)) {
-            idSeq.add(new DERObjectIdentifier(CMSSignedDataGenerator.DIGEST_MD5));
+            idSeq.add(new ASN1ObjectIdentifier(CMSSignedDataGenerator.DIGEST_MD5));
         } else if (hashingAlgorithm.equals(SHA1_HASHING_ALGORITHM)) {
-            idSeq.add(new DERObjectIdentifier(CMSSignedDataGenerator.DIGEST_SHA1));
+            idSeq.add(new ASN1ObjectIdentifier(CMSSignedDataGenerator.DIGEST_SHA1));
         } else {
             throw new IllegalArgumentException(SecurityContext.getMessage("CRYPTO_ERR_INVALID_HASH")); //$NON-NLS-1$
         }
 
-        idSeq.add(new DERNull());
+        idSeq.add(DERNull.INSTANCE);
 
         ASN1EncodableVector mainSeq = new ASN1EncodableVector();
         mainSeq.add(new DERSequence(idSeq));
