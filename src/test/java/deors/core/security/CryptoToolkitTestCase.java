@@ -307,8 +307,11 @@ public class CryptoToolkitTestCase {
         int total = 50;
         for (int i = 0; i < total; i++) {
             SecretKey key = CryptoToolkit.createSymmetricKey();
+            assertEquals("the key is expected to be 24 bytes long",
+                24, key.getEncoded().length);
+            assertEquals("the 24-byte key is expected to be encoded in base64 as a 48 character string",
+                48, StringToolkit.asHexadecimalString(key.getEncoded()).length());
             keys.add(key);
-            System.out.println(StringToolkit.asHexadecimalString(key.getEncoded()));
         }
 
         for (int i = 0; i < total; i++) {
@@ -539,11 +542,11 @@ public class CryptoToolkitTestCase {
                CertStoreException, InvalidAlgorithmParameterException,
                OperatorCreationException {
 
-        String alias = "12d7d9ce-22e1-4b44-9186-12df32a9cd71";
+        String alias = "cn=ficticio activo\\, ciudadano (firma), gn=ciudadano, sn=ficticio, serialnumber=99999018d, c=es";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
-            this.getClass().getResourceAsStream("/certificate6.p12"), "1234".toCharArray());
+            this.getClass().getResourceAsStream("/Ciudadano_firma_activo.pfx"), "123456".toCharArray());
         X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
-        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "1234".toCharArray());
+        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "123456".toCharArray());
         assertNotNull(privateKey);
 
         byte[] data = new byte[] {
@@ -576,11 +579,11 @@ public class CryptoToolkitTestCase {
                CertStoreException, InvalidAlgorithmParameterException,
                OperatorCreationException {
 
-        String alias = "12d7d9ce-22e1-4b44-9186-12df32a9cd71";
+        String alias = "cn=ficticio activo\\, ciudadano (firma), gn=ciudadano, sn=ficticio, serialnumber=99999018d, c=es";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
-            this.getClass().getResourceAsStream("/certificate6.p12"), "1234".toCharArray());
+            this.getClass().getResourceAsStream("/Ciudadano_firma_activo.pfx"), "123456".toCharArray());
         X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
-        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "1234".toCharArray());
+        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "123456".toCharArray());
         assertNotNull(privateKey);
 
         byte[] data = new byte[] {

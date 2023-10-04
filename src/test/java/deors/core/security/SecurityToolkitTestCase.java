@@ -20,7 +20,6 @@ import javax.net.ssl.SSLContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import mockit.Mocked;
 import mockit.Verifications;
@@ -82,11 +81,11 @@ public class SecurityToolkitTestCase {
     public void testSSLContext() throws NoSuchProviderException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
 
         KeyStore ks = CertificateToolkit.readJKSKeyStore(
-            this.getClass().getResourceAsStream("/ac13406900.jks"), "dotdesa".toCharArray());
+            this.getClass().getResourceAsStream("/certificate3.jks"), "changeit".toCharArray());
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/ac13406109.cer"));
+            this.getClass().getResourceAsStream("/certificate1.cer"));
 
-        SSLContext ctx = SecurityToolkit.prepareSSLContext(ks, "dotdesa".toCharArray(), cert);
+        SSLContext ctx = SecurityToolkit.prepareSSLContext(ks, "changeit".toCharArray(), cert);
 
         assertEquals("SSL", ctx.getProtocol());
         assertTrue(ctx.getProvider().toString().contains("SunJSSE"));
@@ -96,9 +95,9 @@ public class SecurityToolkitTestCase {
     public void testSSLContextNoServer() throws NoSuchProviderException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
 
         KeyStore ks = CertificateToolkit.readJKSKeyStore(
-            this.getClass().getResourceAsStream("/ac13406900.jks"), "dotdesa".toCharArray());
+            this.getClass().getResourceAsStream("/certificate3.jks"), "changeit".toCharArray());
 
-        SSLContext ctx = SecurityToolkit.prepareSSLContext(ks, "dotdesa".toCharArray(), null);
+        SSLContext ctx = SecurityToolkit.prepareSSLContext(ks, "changeit".toCharArray(), null);
 
         assertEquals("SSL", ctx.getProtocol());
         assertTrue(ctx.getProvider().toString().contains("SunJSSE"));
@@ -108,9 +107,9 @@ public class SecurityToolkitTestCase {
     public void testChangeDefaultSSLSocketFactory() throws NoSuchProviderException, NoSuchAlgorithmException, KeyStoreException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
 
         KeyStore ks = CertificateToolkit.readJKSKeyStore(
-            this.getClass().getResourceAsStream("/ac13406900.jks"), "dotdesa".toCharArray());
+            this.getClass().getResourceAsStream("/certificate3.jks"), "changeit".toCharArray());
 
-        SSLContext ctx = SecurityToolkit.prepareSSLContext(ks, "dotdesa".toCharArray(), null);
+        SSLContext ctx = SecurityToolkit.prepareSSLContext(ks, "changeit".toCharArray(), null);
 
         SecurityToolkit.changeDefaultSSLSocketFactory(ctx);
     }
@@ -122,7 +121,8 @@ public class SecurityToolkitTestCase {
     }
 
     @Test
-    public void testURLConnectionForTunnelingSecureNoProxy(@Mocked HttpsURLConnection urlconn) {
+    public void testURLConnectionForTunnelingSecureNoProxy(
+        @Mocked HttpsURLConnection urlconn) {
 
         System.setProperty("https.proxyHost", "");
         System.setProperty("https.proxyPort", "");

@@ -6,7 +6,6 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import mockit.Mocked;
 

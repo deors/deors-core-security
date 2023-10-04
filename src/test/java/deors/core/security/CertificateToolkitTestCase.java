@@ -99,7 +99,7 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testGetKeyStoreEntries()
+    public void testGetKeyStoreEntriesOk()
         throws IOException, CertificateException, KeyStoreException,
                NoSuchAlgorithmException, NoSuchProviderException, UnrecoverableKeyException {
 
@@ -125,7 +125,7 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testGetKeyStoreEntry()
+    public void testGetKeyStoreEntryOk()
         throws IOException, CertificateException, KeyStoreException,
                NoSuchAlgorithmException, NoSuchProviderException, UnrecoverableKeyException {
 
@@ -150,7 +150,7 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testGetKeyStoreFirstEntry()
+    public void testGetKeyStoreFirstEntryOk()
         throws IOException, CertificateException, KeyStoreException,
                NoSuchAlgorithmException, NoSuchProviderException, UnrecoverableKeyException {
 
@@ -175,84 +175,41 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testGetCRLDistributionPointsX500()
+    public void testGetCRLDistributionPointsInURL()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/certificate5.cer"));
+            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         List<CRLDistributionPoint> dp = CertificateToolkit.getCRLDistributionPoints(cert);
         assertNotNull(dp);
         assertEquals(1, dp.size());
-        assertEquals(CRLDistributionPoint.CRL_IN_X500, dp.get(0).getType());
-        assertEquals("2.5.4.3=CRL1756,2.5.4.11=FNMT Clase 2 CA,2.5.4.10=FNMT,2.5.4.6=ES", dp.get(0).getTarget());
-    }
-
-    @Test
-    public void testGetCRLDistributionPointsURL()
-        throws IOException, CertificateException {
-
-        X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/certificate8.cer"));
-        List<CRLDistributionPoint> dp = CertificateToolkit.getCRLDistributionPoints(cert);
-        assertNotNull(dp);
-        assertEquals(2, dp.size());
         assertEquals(CRLDistributionPoint.CRL_IN_URL, dp.get(0).getType());
-        assertEquals(CRLDistributionPoint.CRL_IN_URL, dp.get(1).getType());
-        assertEquals("https://crl.accenture.com/classa.crl", dp.get(0).getTarget());
-        assertEquals("https://crl1.accenture.com/classa.crl", dp.get(1).getTarget());
+        assertEquals("ldap://ldapusu.cert.fnmt.es/cn=CRL3748,cn=AC%20FNMT%20Usuarios,ou=CERES,o=FNMT-RCM,c=ES?certificateRevocationList;binary?base?objectclass=cRLDistributionPoint", dp.get(0).getTarget());
     }
 
     @Test
-    public void testGetSubjectAlternativeNames1()
+    public void testGetSubjectAlternativeNames()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/certificate5.cer"));
+            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         Map<Integer, Map<String, String>> map = CertificateToolkit.getSubjectAlternativeNames(cert);
         assertNotNull(map);
 
         Map<String, String> rfc822 = map.get(CertificateToolkit.SUBJECT_ALT_NAMES_TAG_RFC822_ADDRESS);
         assertNotNull(rfc822);
         assertEquals(1, rfc822.size());
-        assertEquals("jorge.hidalgo@gmail.com", rfc822.entrySet().iterator().next().getKey());
-        assertEquals("jorge.hidalgo@gmail.com", rfc822.entrySet().iterator().next().getValue());
+        assertEquals("soporte_tecnico_ceres@fnmt.es", rfc822.entrySet().iterator().next().getKey());
+        assertEquals("soporte_tecnico_ceres@fnmt.es", rfc822.entrySet().iterator().next().getValue());
 
         Map<String, String> dir = map.get(CertificateToolkit.SUBJECT_ALT_NAMES_TAG_DIRECTORY_NAME);
         assertNotNull(dir);
         assertEquals(4, dir.size());
-        assertEquals("JORGE MANUEL", dir.get(CertificateToolkit.OID_FNMT_NOMBRE));
-        assertEquals("HIDALGO", dir.get(CertificateToolkit.OID_FNMT_APELLIDO1));
-        assertEquals("SANCHEZ", dir.get(CertificateToolkit.OID_FNMT_APELLIDO2));
-        assertEquals("44266120K", dir.get(CertificateToolkit.OID_FNMT_NIF));
+        assertEquals("PRUEBAS", dir.get(CertificateToolkit.OID_FNMT_NOMBRE));
+        assertEquals("EIDAS", dir.get(CertificateToolkit.OID_FNMT_APELLIDO1));
+        assertEquals("CERTIFICADO", dir.get(CertificateToolkit.OID_FNMT_APELLIDO2));
+        assertEquals("99999999R", dir.get(CertificateToolkit.OID_FNMT_NIF));
     }
-
-    @Test
-    public void testGetSubjectAlternativeNames2()
-        throws IOException, CertificateException {
-
-        X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/certificate8.cer"));
-        Map<Integer, Map<String, String>> map = CertificateToolkit.getSubjectAlternativeNames(cert);
-        assertNotNull(map);
-
-        Map<String, String> other = map.get(CertificateToolkit.SUBJECT_ALT_NAMES_TAG_OTHER_NAME);
-        assertNotNull(other);
-        assertEquals(1, other.size());
-        assertEquals("1.3.6.1.4.1.311.20.2.3", other.entrySet().iterator().next().getKey());
-        assertEquals("jorge.hidalgo@accenture.com", other.entrySet().iterator().next().getValue());
-
-        Map<String, String> rfc822 = map.get(CertificateToolkit.SUBJECT_ALT_NAMES_TAG_RFC822_ADDRESS);
-        assertNotNull(rfc822);
-        assertEquals(1, rfc822.size());
-        assertEquals("jorge.hidalgo@accenture.com", rfc822.entrySet().iterator().next().getKey());
-        assertEquals("jorge.hidalgo@accenture.com", rfc822.entrySet().iterator().next().getValue());
-
-        Map<String, String> dir = map.get(CertificateToolkit.SUBJECT_ALT_NAMES_TAG_DIRECTORY_NAME);
-        assertNotNull(dir);
-        assertEquals(1, dir.size());
-        assertEquals("2.5.4.3", dir.entrySet().iterator().next().getKey());
-        assertEquals("jorge.hidalgo@accenture.com", dir.entrySet().iterator().next().getValue());
-}
 
     @Test
     public void testGetSubjectDirectoryNameEmpty()
@@ -265,22 +222,22 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testGetSubjectDirectoryName()
+    public void testGetSubjectDirectoryNameOk()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/certificate5.cer"));
+            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         Map<String, String> dir = CertificateToolkit.getSubjectDirectoryName(cert);
         assertNotNull(dir);
         assertEquals(4, dir.size());
-        assertEquals("JORGE MANUEL", dir.get(CertificateToolkit.OID_FNMT_NOMBRE));
-        assertEquals("HIDALGO", dir.get(CertificateToolkit.OID_FNMT_APELLIDO1));
-        assertEquals("SANCHEZ", dir.get(CertificateToolkit.OID_FNMT_APELLIDO2));
-        assertEquals("44266120K", dir.get(CertificateToolkit.OID_FNMT_NIF));
+        assertEquals("PRUEBAS", dir.get(CertificateToolkit.OID_FNMT_NOMBRE));
+        assertEquals("EIDAS", dir.get(CertificateToolkit.OID_FNMT_APELLIDO1));
+        assertEquals("CERTIFICADO", dir.get(CertificateToolkit.OID_FNMT_APELLIDO2));
+        assertEquals("99999999R", dir.get(CertificateToolkit.OID_FNMT_NIF));
     }
 
     @Test
-    public void testValidateX509Certificate1()
+    public void testValidateX509CertificateInvalid1()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
@@ -289,7 +246,7 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testValidateX509Certificate2()
+    public void testValidateX509CertificateInvalid2()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
@@ -298,41 +255,12 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testValidateX509Certificate3()
+    public void testValidateX509CertificateValid()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/certificate5.cer"));
-        assertFalse(CertificateToolkit.validateX509Certificate(cert));
-    }
-
-    @Test
-    public void testValidateX509Certificate4()
-        throws IOException, CertificateException {
-
-        X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/ac13406900.cer"));
-        assertFalse(CertificateToolkit.validateX509Certificate(cert));
-    }
-
-    @Test
-    public void testValidateX509Certificate5()
-        throws IOException, CertificateException {
-
-        X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         assertTrue(CertificateToolkit.validateX509Certificate(cert));
-    }
-
-    @Test
-    public void testValidateX509CertificateWithCA()
-        throws IOException, CertificateException {
-
-        X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/ac13406900.cer"));
-        X509Certificate caCert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
-        assertFalse(CertificateToolkit.validateX509Certificate(cert, caCert));
     }
 
     @Test
@@ -340,9 +268,9 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/Ciudadano_autenticacion_activo.cer"));
         X509Certificate caCert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClase2CA.cer"));
+            this.getClass().getResourceAsStream("/AC-DNIE-003.crt"));
         assertFalse(CertificateToolkit.validateX509Certificate(cert, caCert));
     }
 
@@ -351,23 +279,26 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/AC-DNIE-004.crt"));
         X509Certificate caCert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/AC-RAIZ-DNIE-2.crt"));
         assertTrue(CertificateToolkit.validateX509Certificate(cert, caCert));
     }
 
     @Test
-    public void testValidateX509CertificateWithCAList()
+    public void testValidateX509CertificateWithCAListInvalid()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/ac13406900.cer"));
-        X509Certificate caCert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/Ciudadano_autenticacion_activo.cer"));
+        X509Certificate subCaCert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/AC-DNIE-003.crt"));
+        X509Certificate rootCaCert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/AC-RAIZ-DNIE-2.crt"));
         List<X509Certificate> caList = new ArrayList<X509Certificate>();
-        caList.add(caCert);
-        assertFalse(CertificateToolkit.validateX509Certificate(cert, caCert, caList));
+        caList.add(subCaCert);
+        caList.add(rootCaCert);
+        assertFalse(CertificateToolkit.validateX509Certificate(cert, subCaCert, caList));
     }
 
     @Test
@@ -375,12 +306,15 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
-        X509Certificate caCert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/Ciudadano_autenticacion_activo.cer"));
+        X509Certificate subCaCert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/AC-DNIE-004.crt"));
+        X509Certificate rootCaCert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/AC-RAIZ-DNIE-2.crt"));
         List<X509Certificate> caList = new ArrayList<X509Certificate>();
-        caList.add(caCert);
-        assertTrue(CertificateToolkit.validateX509Certificate(cert, caCert, caList));
+        caList.add(subCaCert);
+        caList.add(rootCaCert);
+        assertTrue(CertificateToolkit.validateX509Certificate(cert, subCaCert, caList));
     }
 
     @Test
@@ -388,13 +322,13 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
-        X509Certificate caCert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClasePCA.der"));
+            this.getClass().getResourceAsStream("/Ciudadano_autenticacion_activo.cer"));
+        X509Certificate subCaCert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/AC-DNIE-004.crt"));
+        X509Certificate otherCaCert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/AC-DNIE-006.crt"));
         List<X509Certificate> caList = new ArrayList<X509Certificate>();
-        X509Certificate caCert2 = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/FNMTClase2CA.cer"));
-        caList.add(caCert2);
-        assertFalse(CertificateToolkit.validateX509Certificate(cert, caCert, caList));
+        caList.add(otherCaCert);
+        assertFalse(CertificateToolkit.validateX509Certificate(cert, subCaCert, caList));
     }
 }
