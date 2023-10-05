@@ -567,7 +567,7 @@ public class CryptoToolkitTestCase {
                OperatorCreationException {
 
         thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Unknown signature type requested: INVALID");
+        thrown.expectMessage("Unknown signature type requested: invalid");
 
         CryptoToolkit.signDataPKCS7(null, null, null, "invalid", true, true);
     }

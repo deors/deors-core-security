@@ -24,6 +24,8 @@ import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.DERT61String;
 import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.DERUTF8String;
+import org.bouncycastle.asn1.DLSet;
+import org.bouncycastle.asn1.DLTaggedObject;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
 
 /**
@@ -94,8 +96,8 @@ final class ASN1Toolkit {
                 continue;
             }
 
-            ASN1TaggedObject tagged1 = (ASN1TaggedObject) tagged.getObject();
-            ASN1TaggedObject tagged2 = (ASN1TaggedObject) tagged1.getObject();
+            ASN1TaggedObject tagged1 = (ASN1TaggedObject) tagged.getBaseObject();
+            ASN1TaggedObject tagged2 = (ASN1TaggedObject) tagged1.getBaseObject();
 
             if (tagged2.getTagNo() == tagUniformResourceIdentifier) {
 
@@ -121,7 +123,7 @@ final class ASN1Toolkit {
 
         int type;
         String location;
-        DEROctetString tagOct = (DEROctetString) asn1Object.getObject();
+        DEROctetString tagOct = (DEROctetString) asn1Object.getBaseObject();
 
         byte[] tagOctects = tagOct.getOctets();
 
@@ -147,7 +149,7 @@ final class ASN1Toolkit {
 
         int type;
         String location;
-        ASN1Sequence tagSeq = (ASN1Sequence) asn1Object.getObject();
+        ASN1Sequence tagSeq = (ASN1Sequence) asn1Object.getBaseObject();
 
         StringBuilder sb = new StringBuilder();
 
@@ -220,6 +222,14 @@ final class ASN1Toolkit {
                 Integer tagNumber = Integer.valueOf(taggedObject.getTagNo());
 
                 tags.put(tagNumber, parseNameEntry(taggedObject));
+
+            } else if (asn1Object instanceof DLTaggedObject) {
+
+                DLTaggedObject taggedObject = (DLTaggedObject) asn1Object;
+
+                Integer tagNumber = Integer.valueOf(taggedObject.getTagNo());
+
+                tags.put(tagNumber, parseNameEntry(taggedObject));
             }
         }
 
@@ -237,16 +247,16 @@ final class ASN1Toolkit {
 
         Map<String, String> tagData = new HashMap<>();
 
-        if (asn1Object.getObject() instanceof DEROctetString) {
+        if (asn1Object.getBaseObject() instanceof DEROctetString) {
 
-            DEROctetString tagOctetString = (DEROctetString) asn1Object.getObject();
+            DEROctetString tagOctetString = (DEROctetString) asn1Object.getBaseObject();
 
             String value = new String(tagOctetString.getOctets());
             tagData.put(value, value);
 
-        } else if (asn1Object.getObject() instanceof ASN1Sequence) {
+        } else if (asn1Object.getBaseObject() instanceof ASN1Sequence) {
 
-            ASN1Sequence tagSeq = (ASN1Sequence) asn1Object.getObject();
+            ASN1Sequence tagSeq = (ASN1Sequence) asn1Object.getBaseObject();
 
             for (int j = 0; j < tagSeq.size(); j++) {
 
@@ -258,7 +268,7 @@ final class ASN1Toolkit {
                     if (j + 1 < tagSeq.size() && tagSeq.getObjectAt(j + 1) instanceof DERTaggedObject) {
 
                         DERTaggedObject tag = (DERTaggedObject) tagSeq.getObjectAt(j + 1);
-                        Object o = tag.getObject();
+                        Object o = tag.getBaseObject();
 
                         if (o instanceof DERPrintableString) {
 
@@ -320,6 +330,42 @@ final class ASN1Toolkit {
                             continue;
                         }
                     }
+                } else if (tagSeq.getObjectAt(j) instanceof DLSet) {
+
+                    DLSet set = (DLSet) tagSeq.getObjectAt(j);
+
+                    for (int k = 0; k < set.size(); k++) {
+
+                        ASN1Sequence seq = (ASN1Sequence) set.getObjectAt(k);
+                        Object o = seq.getObjectAt(1);
+
+                        ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq.getObjectAt(0);
+                        String oidName = oid.getId();
+
+                        if (o instanceof DERPrintableString) {
+
+                            DERPrintableString str = (DERPrintableString) o;
+                            tagData.put(oidName, str.getString());
+
+                        } else if (o instanceof DERT61String) {
+
+                            DERT61String str = (DERT61String) o;
+                            tagData.put(oidName, str.getString());
+
+                        } else if (o instanceof DERUTF8String) {
+
+                            DERUTF8String str = (DERUTF8String) o;
+                            tagData.put(oidName, str.getString());
+
+                        } else if (o instanceof DEROctetString) {
+
+                            DEROctetString str = (DEROctetString) o;
+                            tagData.put(oidName, new String(str.getOctets()));
+
+                        } else {
+                            continue;
+                        }
+                    }
                 } else {
                     continue;
                 }
@@ -340,61 +386,108 @@ final class ASN1Toolkit {
 
         final int tagDirectoryName = SUBJECT_ALT_NAMES_TAG_DIRECTORY_NAME.intValue();
 
+        Map<String, String> tagData = new HashMap<String, String>();
+
         for (int i = 0; i < asn1Sequence.size(); i++) {
 
-            DERTaggedObject tagged = (DERTaggedObject) asn1Sequence.getObjectAt(i);
+            if (asn1Sequence.getObjectAt(i) instanceof DERTaggedObject) {
 
-            if (tagged.getTagNo() != tagDirectoryName) {
-                continue;
-            }
+                DERTaggedObject tagged = (DERTaggedObject) asn1Sequence.getObjectAt(i);
 
-            ASN1Sequence tagSeq = (ASN1Sequence) tagged.getObject();
+                if (tagged.getTagNo() != tagDirectoryName) {
+                    continue;
+                }
 
-            Map<String, String> tagData = new HashMap<String, String>();
+                ASN1Sequence tagSeq = (ASN1Sequence) tagged.getBaseObject();
 
-            for (int j = 0; j < tagSeq.size(); j++) {
+                for (int j = 0; j < tagSeq.size(); j++) {
 
-                DERSet set = (DERSet) tagSeq.getObjectAt(j);
+                    DERSet set = (DERSet) tagSeq.getObjectAt(j);
 
-                for (int k = 0; k < set.size(); k++) {
+                    for (int k = 0; k < set.size(); k++) {
 
-                    ASN1Sequence seq = (ASN1Sequence) set.getObjectAt(k);
-                    Object o = seq.getObjectAt(1);
+                        ASN1Sequence seq = (ASN1Sequence) set.getObjectAt(k);
+                        Object o = seq.getObjectAt(1);
 
-                    ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq.getObjectAt(0);
-                    String oidName = oid.getId();
+                        ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq.getObjectAt(0);
+                        String oidName = oid.getId();
 
-                    if (o instanceof DERPrintableString) {
+                        if (o instanceof DERPrintableString) {
 
-                        DERPrintableString str = (DERPrintableString) o;
-                        tagData.put(oidName, str.getString());
+                            DERPrintableString str = (DERPrintableString) o;
+                            tagData.put(oidName, str.getString());
 
-                    } else if (o instanceof DERT61String) {
+                        } else if (o instanceof DERT61String) {
 
-                        DERT61String str = (DERT61String) o;
-                        tagData.put(oidName, str.getString());
+                            DERT61String str = (DERT61String) o;
+                            tagData.put(oidName, str.getString());
 
-                    } else if (o instanceof DERUTF8String) {
+                        } else if (o instanceof DERUTF8String) {
 
-                        DERUTF8String str = (DERUTF8String) o;
-                        tagData.put(oidName, str.getString());
+                            DERUTF8String str = (DERUTF8String) o;
+                            tagData.put(oidName, str.getString());
 
-                    } else if (o instanceof DEROctetString) {
+                        } else if (o instanceof DEROctetString) {
 
-                        DEROctetString str = (DEROctetString) o;
-                        tagData.put(oidName, new String(str.getOctets()));
+                            DEROctetString str = (DEROctetString) o;
+                            tagData.put(oidName, new String(str.getOctets()));
 
-                    } else {
-                        continue;
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+            } else if (asn1Sequence.getObjectAt(i) instanceof DLTaggedObject) {
+                
+                DLTaggedObject tagged = (DLTaggedObject) asn1Sequence.getObjectAt(i);
+
+                if (tagged.getTagNo() != tagDirectoryName) {
+                    continue;
+                }
+
+                ASN1Sequence tagSeq = (ASN1Sequence) tagged.getBaseObject();
+
+                for (int j = 0; j < tagSeq.size(); j++) {
+
+                    DLSet set = (DLSet) tagSeq.getObjectAt(j);
+
+                    for (int k = 0; k < set.size(); k++) {
+
+                        ASN1Sequence seq = (ASN1Sequence) set.getObjectAt(k);
+                        Object o = seq.getObjectAt(1);
+
+                        ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq.getObjectAt(0);
+                        String oidName = oid.getId();
+
+                        if (o instanceof DERPrintableString) {
+
+                            DERPrintableString str = (DERPrintableString) o;
+                            tagData.put(oidName, str.getString());
+
+                        } else if (o instanceof DERT61String) {
+
+                            DERT61String str = (DERT61String) o;
+                            tagData.put(oidName, str.getString());
+
+                        } else if (o instanceof DERUTF8String) {
+
+                            DERUTF8String str = (DERUTF8String) o;
+                            tagData.put(oidName, str.getString());
+
+                        } else if (o instanceof DEROctetString) {
+
+                            DEROctetString str = (DEROctetString) o;
+                            tagData.put(oidName, new String(str.getOctets()));
+
+                        } else {
+                            continue;
+                        }
                     }
                 }
             }
-
-            return tagData;
         }
 
-        // the tag directoryName was not found
-        return null;
+        return tagData;
     }
 
     /**
@@ -431,7 +524,7 @@ final class ASN1Toolkit {
         ASN1OutputStream a1os = null;
 
         try {
-            a1os = new ASN1OutputStream(baos);
+            a1os = ASN1OutputStream.create(baos);
             a1os.writeObject(new DERSequence(mainSeq));
             return baos.toByteArray();
         } finally {

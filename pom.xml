@@ -21,7 +21,7 @@
         <deors-core.version>1.0-SNAPSHOT</deors-core.version>
 
         <activation.version>1.1.1</activation.version>
-        <bouncycastle.version>1.61</bouncycastle.version>
+        <bouncycastle.version>1.76</bouncycastle.version>
         
         <logback.version>1.4.11</logback.version>
 
@@ -188,12 +188,12 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
+            <artifactId>bcprov-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk15on</artifactId>
+            <artifactId>bcmail-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
 
