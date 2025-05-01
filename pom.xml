@@ -23,7 +23,7 @@
         <activation.version>1.1.1</activation.version>
         <bouncycastle.version>1.76</bouncycastle.version>
         
-        <logback.version>1.4.11</logback.version>
+        <logback.version>1.5.18</logback.version>
 
         <junit.version>5.10.0</junit.version>
         <jmockit.version>1.45</jmockit.version>
