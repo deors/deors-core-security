@@ -258,11 +258,20 @@ public class CertificateToolkitTestCase {
     }
 
     @Test
-    public void testValidateX509CertificateValid()
+    public void testValidateX509CertificateValid1()
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
+            this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999972C.cer"));
+        assertTrue(CertificateToolkit.validateX509Certificate(cert));
+    }
+
+    @Test
+    public void testValidateX509CertificateValid2()
+        throws IOException, CertificateException {
+
+        X509Certificate cert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         assertTrue(CertificateToolkit.validateX509Certificate(cert));
     }
 
