@@ -7,7 +7,7 @@
 
     <groupId>deors.core</groupId>
     <artifactId>deors-core-security</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>deors-core-security</name>
@@ -16,22 +16,21 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <java.version>21</java.version>
+        <java.version>24</java.version>
 
-        <deors-core.version>1.0</deors-core.version>
+        <deors-core.version>1.1-SNAPSHOT</deors-core.version>
 
         <activation.version>1.1.1</activation.version>
         <bouncycastle.version>1.78</bouncycastle.version>
         
         <logback.version>1.5.18</logback.version>
 
-        <junit.version>5.10.0</junit.version>
-        <jmockit.version>1.45</jmockit.version>
-        <jacoco.version>0.8.10</jacoco.version>
-        <sonarjava.version>5.10.2.17019</sonarjava.version>
-        <pitest.version>1.15.0</pitest.version>
-        <pitest-junit5.version>1.2.0</pitest-junit5.version>
-        <dependency-check.version>8.4.0</dependency-check.version>
+        <junit.version>5.13.3</junit.version>
+        <jmockit.version>1.50</jmockit.version>
+        <jacoco.version>0.8.13</jacoco.version>
+        <pitest.version>1.20.0</pitest.version>
+        <pitest-junit5.version>1.2.3</pitest-junit5.version>
+        <dependency-check.version>12.1.3</dependency-check.version>
 
         <jmockit.path>${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar</jmockit.path>
         <jmockit.agentConfig>-javaagent:${jmockit.path}</jmockit.agentConfig>
@@ -42,11 +41,11 @@
         <jacoco.utAgentConfig>-javaagent:${jacoco.path}=destfile=${jacoco.utReport}</jacoco.utAgentConfig>
         <jacoco.itAgentConfig>-javaagent:${jacoco.path}=destfile=${jacoco.itReport}</jacoco.itAgentConfig>
 
-        <compiler-plugin.version>3.8.0</compiler-plugin.version>
-        <surefire-plugin.version>2.22.1</surefire-plugin.version>
-        <failsafe-plugin.version>2.22.1</failsafe-plugin.version>
-        <source-plugin.version>3.0.1</source-plugin.version>
-        <javadoc-plugin.version>3.0.1</javadoc-plugin.version>
+        <compiler-plugin.version>3.14.0</compiler-plugin.version>
+        <surefire-plugin.version>3.5.3</surefire-plugin.version>
+        <failsafe-plugin.version>3.5.3</failsafe-plugin.version>
+        <source-plugin.version>3.3.1</source-plugin.version>
+        <javadoc-plugin.version>3.11.2</javadoc-plugin.version>
     </properties>
 
     <build>
@@ -69,12 +68,6 @@
                     <excludes>
                         <exclude>**/*IntegrationTestCase.java</exclude>
                     </excludes>
-                    <properties>
-                        <property>
-                            <name>listener</name>
-                            <value>org.sonar.java.jacoco.JUnitListener</value>
-                        </property>
-                    </properties>
                 </configuration>
             </plugin>
             <plugin>
@@ -234,12 +227,14 @@
             <classifier>runtime</classifier>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.sonarsource.java</groupId>
-            <artifactId>sonar-jacoco-listeners</artifactId>
-            <version>${sonarjava.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/deors/deors-core-security</url>
+        </repository>
+    </distributionManagement>
 
 </project>
