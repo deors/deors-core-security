@@ -88,24 +88,29 @@ final class ASN1Toolkit {
 
         List<CRLDistributionPoint> distributionPoints = new ArrayList<>();
 
-        for (int j = 0; j < asn1Sequence.size(); j++) {
+        for (int i = 0; i < asn1Sequence.size(); i++) {
 
-            ASN1TaggedObject tagged = (ASN1TaggedObject) asn1Sequence.getObjectAt(j);
+            ASN1TaggedObject seqElem = (ASN1TaggedObject) asn1Sequence.getObjectAt(i);
 
-            if (tagged.getTagNo() != tagFullName) {
+            if (seqElem.getTagNo() != tagFullName) {
                 continue;
             }
 
-            ASN1TaggedObject tagged1 = (ASN1TaggedObject) tagged.getBaseObject();
-            ASN1TaggedObject tagged2 = (ASN1TaggedObject) tagged1.getBaseObject();
+            ASN1TaggedObject seqElemBaseObj = (ASN1TaggedObject) seqElem.getBaseObject();
+            ASN1Sequence nestedSeq = (ASN1Sequence) seqElemBaseObj.getBaseObject();
 
-            if (tagged2.getTagNo() == tagUniformResourceIdentifier) {
+            for (int j = 0; j < nestedSeq.size(); j++) {
+                ASN1TaggedObject nestedSeqElem =
+                    (ASN1TaggedObject) nestedSeq.getObjectAt(j);
 
-                distributionPoints.add(parseCRLinURL(tagged2));
+                if (nestedSeqElem.getTagNo() == tagUniformResourceIdentifier) {
 
-            } else if (tagged2.getTagNo() == tagDirectoryName) {
+                    distributionPoints.add(parseCRLinURL(nestedSeqElem));
 
-                distributionPoints.add(parseCRLinDirectory(tagged2));
+                } else if (nestedSeqElem.getTagNo() == tagDirectoryName) {
+
+                    distributionPoints.add(parseCRLinDirectory(nestedSeqElem));
+                }
             }
         }
 

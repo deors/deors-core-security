@@ -179,12 +179,14 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
+            this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         List<CRLDistributionPoint> dp = CertificateToolkit.getCRLDistributionPoints(cert);
         assertNotNull(dp);
-        assertEquals(1, dp.size());
+        assertEquals(2, dp.size());
         assertEquals(CRLDistributionPoint.CRL_IN_URL, dp.get(0).getType());
-        assertEquals("ldap://ldapusu.cert.fnmt.es/cn=CRL3748,cn=AC%20FNMT%20Usuarios,ou=CERES,o=FNMT-RCM,c=ES?certificateRevocationList;binary?base?objectclass=cRLDistributionPoint", dp.get(0).getTarget());
+        assertEquals("ldap://ldapusu.cert.fnmt.es/cn=CRLU1879,cn=AC%20FNMT%20Usuarios,ou=CERES,o=FNMT-RCM,c=ES?certificateRevocationList;binary?base?objectclass=cRLDistributionPoint", dp.get(0).getTarget());
+        assertEquals(CRLDistributionPoint.CRL_IN_URL, dp.get(1).getType());
+        assertEquals("http://www.cert.fnmt.es/crlsacusu/CRLU1879.crl", dp.get(1).getTarget());
     }
 
     @Test
@@ -192,7 +194,7 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
+            this.getClass().getResourceAsStream("/REVOCADO_EIDAS_CERTIFICADO_PRUEBAS_SMIME___99999999R.cer"));
         Map<Integer, Map<String, String>> subj = CertificateToolkit.getSubjectAlternativeNames(cert);
         assertNotNull(subj);
         assertFalse("returned map should have data", subj.isEmpty());
@@ -228,7 +230,7 @@ public class CertificateToolkitTestCase {
         throws IOException, CertificateException {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
-            this.getClass().getResourceAsStream("/EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
+            this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         Map<String, String> dir = CertificateToolkit.getSubjectDirectoryName(cert);
         assertNotNull(dir);
         assertFalse("returned map should have data", dir.isEmpty());
@@ -254,6 +256,24 @@ public class CertificateToolkitTestCase {
 
         X509Certificate cert = CertificateToolkit.readX509Certificate(
             this.getClass().getResourceAsStream("/certificate2.der"));
+        assertFalse(CertificateToolkit.validateX509Certificate(cert));
+    }
+
+    @Test
+    public void testValidateX509CertificateInvalid3()
+        throws IOException, CertificateException {
+
+        X509Certificate cert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/Ciudadano_autenticacion_Caducado.cer"));
+        assertFalse(CertificateToolkit.validateX509Certificate(cert));
+    }
+
+    @Test
+    public void testValidateX509CertificateInvalid4()
+        throws IOException, CertificateException {
+
+        X509Certificate cert = CertificateToolkit.readX509Certificate(
+            this.getClass().getResourceAsStream("/Ciudadano_firma_Caducado.cer"));
         assertFalse(CertificateToolkit.validateX509Certificate(cert));
     }
 

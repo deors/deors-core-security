@@ -536,6 +536,19 @@ public class CryptoToolkitTestCase {
     }
 
     @Test
+    public void testSignVerifyPKCS7Invalid()
+        throws CertificateException, KeyStoreException, UnrecoverableKeyException,
+               IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
+               CertStoreException, InvalidAlgorithmParameterException,
+               OperatorCreationException {
+
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("Unknown signature type requested: invalid");
+
+        CryptoToolkit.signDataPKCS7(null, null, null, "invalid", true, true);
+    }
+
+    @Test
     public void testSignVerifyPKCS7()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
@@ -557,19 +570,6 @@ public class CryptoToolkitTestCase {
         assertNotNull(signature);
 
         assertTrue(CryptoToolkit.verifySignaturePKCS7(signature, data, cert));
-    }
-
-    @Test
-    public void testSignVerifyPKCS7Invalid()
-        throws CertificateException, KeyStoreException, UnrecoverableKeyException,
-               IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
-               CertStoreException, InvalidAlgorithmParameterException,
-               OperatorCreationException {
-
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Unknown signature type requested: invalid");
-
-        CryptoToolkit.signDataPKCS7(null, null, null, "invalid", true, true);
     }
 
     @Test
