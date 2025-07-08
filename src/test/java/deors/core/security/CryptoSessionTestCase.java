@@ -493,11 +493,11 @@ public class CryptoSessionTestCase {
                CertStoreException, InvalidAlgorithmParameterException,
                OperatorCreationException {
 
-        String alias = "cn=ficticio activo\\, ciudadano (firma), gn=ciudadano, sn=ficticio, serialnumber=99999018d, c=es";
+        String alias = "eidas_certificado_pruebas___99999972c";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
-            this.getClass().getResourceAsStream("/Ciudadano_firma_activo.pfx"), "123456".toCharArray());
+            this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999972C.p12"), "1234".toCharArray());
         X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
-        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "123456".toCharArray());
+        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "1234".toCharArray());
         assertNotNull(privateKey);
 
         byte[] data = new byte[] {
@@ -520,11 +520,11 @@ public class CryptoSessionTestCase {
         CryptoSession session2 = new CryptoSession(session);
         session2.setDigestAlgorithm(CryptoToolkit.SHA1RSA_DIGEST_ALGORITHM);
 
-        String alias = "cn=ficticio activo\\, ciudadano (firma), gn=ciudadano, sn=ficticio, serialnumber=99999018d, c=es";
+        String alias = "eidas_certificado_pruebas___99999972c";
         KeyStore ks = CertificateToolkit.readPKCS12KeyStore(
-            this.getClass().getResourceAsStream("/Ciudadano_firma_activo.pfx"), "123456".toCharArray());
+            this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999972C.p12"), "1234".toCharArray());
         X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
-        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "123456".toCharArray());
+        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, "1234".toCharArray());
         assertNotNull(privateKey);
 
         byte[] data = new byte[] {
