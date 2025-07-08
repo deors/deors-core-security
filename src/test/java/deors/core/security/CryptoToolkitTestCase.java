@@ -536,7 +536,7 @@ public class CryptoToolkitTestCase {
     }
 
     @Test
-    public void testSignVerifyPKCS7Invalid()
+    public void testSignVerifyPKCS7InvalidSignatureType()
         throws CertificateException, KeyStoreException, UnrecoverableKeyException,
                IOException,NoSuchAlgorithmException, NoSuchProviderException, CMSException,
                CertStoreException, InvalidAlgorithmParameterException,
