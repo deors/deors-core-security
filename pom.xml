@@ -16,21 +16,21 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <java.version>24</java.version>
+        <java.version>25</java.version>
 
         <deors-core.version>1.1-SNAPSHOT</deors-core.version>
 
         <activation.version>1.1.1</activation.version>
-        <bouncycastle.version>1.81</bouncycastle.version>
+        <bouncycastle.version>1.82</bouncycastle.version>
         
-        <logback.version>1.5.18</logback.version>
+        <logback.version>1.5.21</logback.version>
 
-        <junit.version>5.13.3</junit.version>
+        <junit.version>6.0.1</junit.version>
         <jmockit.version>1.50</jmockit.version>
-        <jacoco.version>0.8.13</jacoco.version>
-        <pitest.version>1.20.0</pitest.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <pitest.version>1.22.0</pitest.version>
         <pitest-junit5.version>1.2.3</pitest-junit5.version>
-        <dependency-check.version>12.1.3</dependency-check.version>
+        <dependency-check.version>12.1.9</dependency-check.version>
 
         <jmockit.path>${settings.localRepository}/org/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar</jmockit.path>
         <jmockit.agentConfig>-javaagent:${jmockit.path}</jmockit.agentConfig>
@@ -41,9 +41,9 @@
         <jacoco.utAgentConfig>-javaagent:${jacoco.path}=destfile=${jacoco.utReport}</jacoco.utAgentConfig>
         <jacoco.itAgentConfig>-javaagent:${jacoco.path}=destfile=${jacoco.itReport}</jacoco.itAgentConfig>
 
-        <compiler-plugin.version>3.14.0</compiler-plugin.version>
-        <surefire-plugin.version>3.5.3</surefire-plugin.version>
-        <failsafe-plugin.version>3.5.3</failsafe-plugin.version>
+        <compiler-plugin.version>3.14.1</compiler-plugin.version>
+        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <failsafe-plugin.version>3.5.4</failsafe-plugin.version>
         <source-plugin.version>3.3.1</source-plugin.version>
         <javadoc-plugin.version>3.11.2</javadoc-plugin.version>
     </properties>
