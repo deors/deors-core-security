@@ -1,10 +1,10 @@
 package deors.core.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CertificateToolkitTestCase {
 
@@ -197,7 +197,7 @@ public class CertificateToolkitTestCase {
             this.getClass().getResourceAsStream("/REVOCADO_EIDAS_CERTIFICADO_PRUEBAS_SMIME___99999999R.cer"));
         Map<Integer, Map<String, String>> subj = CertificateToolkit.getSubjectAlternativeNames(cert);
         assertNotNull(subj);
-        assertFalse("returned map should have data", subj.isEmpty());
+        assertFalse(subj.isEmpty(), "returned map should have data");
 
         Map<String, String> rfc822 = subj.get(CertificateToolkit.SUBJECT_ALT_NAMES_TAG_RFC822_ADDRESS);
         assertNotNull(rfc822);
@@ -222,7 +222,7 @@ public class CertificateToolkitTestCase {
             this.getClass().getResourceAsStream("/certificate1.cer"));
         Map<String, String> dir = CertificateToolkit.getSubjectDirectoryName(cert);
         assertNotNull(dir);
-        assertTrue("returned map should be empty", dir.isEmpty());
+        assertTrue(dir.isEmpty(), "returned map should be empty");
     }
 
     @Test
@@ -233,7 +233,7 @@ public class CertificateToolkitTestCase {
             this.getClass().getResourceAsStream("/ACTIVO_EIDAS_CERTIFICADO_PRUEBAS___99999999R.cer"));
         Map<String, String> dir = CertificateToolkit.getSubjectDirectoryName(cert);
         assertNotNull(dir);
-        assertFalse("returned map should have data", dir.isEmpty());
+        assertFalse(dir.isEmpty(), "returned map should have data");
         assertEquals(4, dir.size());
         assertEquals("PRUEBAS", dir.get(CertificateToolkit.OID_FNMT_NOMBRE));
         assertEquals("EIDAS", dir.get(CertificateToolkit.OID_FNMT_APELLIDO1));

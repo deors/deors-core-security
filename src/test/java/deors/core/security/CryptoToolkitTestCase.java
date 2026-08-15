@@ -1,10 +1,11 @@
 package deors.core.security;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,11 +35,9 @@ import javax.crypto.SecretKey;
 
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import deors.core.commons.StringToolkit;
 import deors.core.commons.io.IOToolkit;
@@ -47,21 +46,19 @@ public class CryptoToolkitTestCase {
 
     private static final String NEW_LINE = "\n";
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     public CryptoToolkitTestCase() {
 
         super();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void prepareProdiverBC() {
 
         SecurityToolkit.prepareProviderBC();
     }
 
-    @AfterClass
+    @AfterAll
     public static void removeProdiverBC() {
 
         SecurityToolkit.removeProviderBC();
@@ -71,9 +68,9 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        CryptoToolkit.calculateHash((InputStream) null);
+        assertThrows(NullPointerException.class, () -> {
+            CryptoToolkit.calculateHash((InputStream) null);
+        });
     }
 
     @Test
@@ -117,19 +114,19 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashInvalid()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NoSuchAlgorithmException.class);
-
-        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        CryptoToolkit.calculateHash(is, "invalid");
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+            CryptoToolkit.calculateHash(is, "invalid");
+        });
     }
 
     @Test
     public void testCalculateHashFileNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        CryptoToolkit.calculateHash((File) null);
+        assertThrows(NullPointerException.class, () -> {
+            CryptoToolkit.calculateHash((File) null);
+        });
     }
 
     @Test
@@ -174,20 +171,20 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashFileInvalid()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        thrown.expect(NoSuchAlgorithmException.class);
-
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
-        CryptoToolkit.calculateHash(f, "invalid");
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            URL url = this.getClass().getResource("/samplefile.txt");
+            File f = new File(url.toURI());
+            CryptoToolkit.calculateHash(f, "invalid");
+        });
     }
 
     @Test
     public void testCalculateHashStringNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        CryptoToolkit.calculateHashString((InputStream) null);
+        assertThrows(NullPointerException.class, () -> {
+            CryptoToolkit.calculateHashString((InputStream) null);
+        });
     }
 
     @Test
@@ -228,19 +225,19 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashStringInvalid()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NoSuchAlgorithmException.class);
-
-        InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
-        CryptoToolkit.calculateHashString(is, "invalid");
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            InputStream is = this.getClass().getResourceAsStream("/samplefile.txt");
+            CryptoToolkit.calculateHashString(is, "invalid");
+        });
     }
 
     @Test
     public void testCalculateHashStringFileNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        CryptoToolkit.calculateHashString((File) null);
+        assertThrows(NullPointerException.class, () -> {
+            CryptoToolkit.calculateHashString((File) null);
+        });
     }
 
     @Test
@@ -281,11 +278,11 @@ public class CryptoToolkitTestCase {
     public void testCalculateHashStringFileInvalid()
         throws IOException, URISyntaxException, NoSuchAlgorithmException {
 
-        thrown.expect(NoSuchAlgorithmException.class);
-
-        URL url = this.getClass().getResource("/samplefile.txt");
-        File f = new File(url.toURI());
-        CryptoToolkit.calculateHashString(f, "invalid");
+        assertThrows(NoSuchAlgorithmException.class, () -> {
+            URL url = this.getClass().getResource("/samplefile.txt");
+            File f = new File(url.toURI());
+            CryptoToolkit.calculateHashString(f, "invalid");
+        });
     }
 
     @Test
@@ -307,17 +304,17 @@ public class CryptoToolkitTestCase {
         int total = 50;
         for (int i = 0; i < total; i++) {
             SecretKey key = CryptoToolkit.createSymmetricKey();
-            assertEquals("the key is expected to be 24 bytes long",
-                24, key.getEncoded().length);
-            assertEquals("the 24-byte key is expected to be encoded in base64 as a 48 character string",
-                48, StringToolkit.asHexadecimalString(key.getEncoded()).length());
+            assertEquals(24, key.getEncoded().length,
+                "the key is expected to be 24 bytes long");
+            assertEquals(48, StringToolkit.asHexadecimalString(key.getEncoded()).length(),
+                "the 24-byte key is expected to be encoded in base64 as a 48 character string");
             keys.add(key);
         }
 
         for (int i = 0; i < total; i++) {
             SecretKey key1 = keys.get(i);
             SecretKey key2 = i == total - 1 ? keys.get(0) : keys.get(i + 1);
-            assertFalse("same keys generated", key1.equals(key2));
+            assertFalse(key1.equals(key2), "same keys generated");
         }
     }
 
@@ -358,9 +355,9 @@ public class CryptoToolkitTestCase {
     public void testCreateSymmetricInvalidProvider()
         throws NoSuchAlgorithmException, NoSuchProviderException {
 
-        thrown.expect(NoSuchProviderException.class);
-
-        CryptoToolkit.createSymmetricKey("sha1prng", "DESede", 24, "invalid");
+        assertThrows(NoSuchProviderException.class, () -> {
+            CryptoToolkit.createSymmetricKey("sha1prng", "DESede", 24, "invalid");
+        });
     }
 
     @Test
@@ -542,10 +539,10 @@ public class CryptoToolkitTestCase {
                CertStoreException, InvalidAlgorithmParameterException,
                OperatorCreationException {
 
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Unknown signature type requested: invalid");
-
-        CryptoToolkit.signDataPKCS7(null, null, null, "invalid", true, true);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            CryptoToolkit.signDataPKCS7(null, null, null, "invalid", true, true);
+        });
+        assertEquals("Unknown signature type requested: invalid", ex.getMessage());
     }
 
     @Test

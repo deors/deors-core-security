@@ -1,9 +1,10 @@
 package deors.core.security;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,11 +34,9 @@ import javax.crypto.SecretKey;
 
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import deors.core.commons.StringToolkit;
 import deors.core.commons.io.IOToolkit;
@@ -48,21 +47,19 @@ public class CryptoSessionTestCase {
 
     private CryptoSession session = new CryptoSession();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     public CryptoSessionTestCase() {
 
         super();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void prepareProdiverBC() {
 
         SecurityToolkit.prepareProviderBC();
     }
 
-    @AfterClass
+    @AfterAll
     public static void removeProdiverBC() {
 
         SecurityToolkit.removeProviderBC();
@@ -256,9 +253,9 @@ public class CryptoSessionTestCase {
     public void testCalculateHashNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        session.calculateHash((InputStream) null);
+        assertThrows(NullPointerException.class, () -> {
+            session.calculateHash((InputStream) null);
+        });
     }
 
     @Test
@@ -282,9 +279,9 @@ public class CryptoSessionTestCase {
     public void testCalculateHashFileNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        session.calculateHash((File) null);
+        assertThrows(NullPointerException.class, () -> {
+            session.calculateHash((File) null);
+        });
     }
 
     @Test
@@ -308,9 +305,9 @@ public class CryptoSessionTestCase {
     public void testCalculateHashStringNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        session.calculateHashString((InputStream) null);
+        assertThrows(NullPointerException.class, () -> {
+            session.calculateHashString((InputStream) null);
+        });
     }
 
     @Test
@@ -334,9 +331,9 @@ public class CryptoSessionTestCase {
     public void testCalculateHashStringFileNull()
         throws IOException, NoSuchAlgorithmException {
 
-        thrown.expect(NullPointerException.class);
-
-        session.calculateHashString((File) null);
+        assertThrows(NullPointerException.class, () -> {
+            session.calculateHashString((File) null);
+        });
     }
 
     @Test

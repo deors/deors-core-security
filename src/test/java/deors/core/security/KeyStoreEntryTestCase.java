@@ -1,13 +1,12 @@
 package deors.core.security;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-import org.junit.Test;
-
-import mockit.Mocked;
+import org.junit.jupiter.api.Test;
 
 public class KeyStoreEntryTestCase {
 
@@ -17,8 +16,10 @@ public class KeyStoreEntryTestCase {
     }
 
     @Test
-    public void testDefaultConstructorGettersAndSetters(@Mocked X509Certificate cert, @Mocked PrivateKey key) {
+    public void testDefaultConstructorGettersAndSetters() {
 
+        X509Certificate cert = mock(X509Certificate.class);
+        PrivateKey key = mock(PrivateKey.class);
         KeyStoreEntry kse = new KeyStoreEntry();
 
         kse.setAlias("alias");
@@ -31,8 +32,10 @@ public class KeyStoreEntryTestCase {
     }
 
     @Test
-    public void testConstructorAll(@Mocked X509Certificate cert, @Mocked PrivateKey key) {
+    public void testConstructorAll() {
 
+        X509Certificate cert = mock(X509Certificate.class);
+        PrivateKey key = mock(PrivateKey.class);
         KeyStoreEntry kse = new KeyStoreEntry("alias", cert, key);
 
         assertEquals("alias", kse.getAlias());

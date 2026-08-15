@@ -1,7 +1,10 @@
 package deors.core.security;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -14,16 +17,14 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
-import javax.activation.CommandMap;
+import jakarta.activation.CommandMap;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import mockit.Mocked;
-import mockit.Verifications;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedConstruction;
 
 public class SecurityToolkitTestCase {
 
@@ -35,14 +36,14 @@ public class SecurityToolkitTestCase {
         super();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void saveProxy() {
 
         proxyHost = System.getProperty("https.proxyHost");
         proxyPort = System.getProperty("https.proxyPort");
     }
 
-    @AfterClass
+    @AfterAll
     public static void restoreProxy() {
 
         if (proxyHost != null) {
@@ -116,15 +117,17 @@ public class SecurityToolkitTestCase {
     }
 
     @Test
-    public void testURLConnectionForTunnelingNotSecure(
-        @Mocked HttpURLConnection urlconn) {
+    public void testURLConnectionForTunnelingNotSecure() {
+
+        HttpURLConnection urlconn = mock(HttpURLConnection.class);
 
         assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
     }
 
     @Test
-    public void testURLConnectionForTunnelingSecureNoProxy(
-        @Mocked HttpsURLConnection urlconn) {
+    public void testURLConnectionForTunnelingSecureNoProxy() {
+
+        HttpsURLConnection urlconn = mock(HttpsURLConnection.class);
 
         System.setProperty("https.proxyHost", "");
         System.setProperty("https.proxyPort", "");
@@ -133,16 +136,19 @@ public class SecurityToolkitTestCase {
     }
 
     @Test
-    public void testURLConnectionForTunnelingSecureProxy(
-        @Mocked HttpsURLConnection urlconn) {
+    public void testURLConnectionForTunnelingSecureProxy() {
+
+        HttpsURLConnection urlconn = mock(HttpsURLConnection.class);
 
         System.setProperty("https.proxyHost", "secureproxy");
         System.setProperty("https.proxyPort", "8080");
 
-        assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
+        try (MockedConstruction<SSLTunnelSocketFactory> mocked = mockConstruction(SSLTunnelSocketFactory.class)) {
 
-        new Verifications() {{
-            new SSLTunnelSocketFactory("secureproxy", 8080);
-        }};
+            assertEquals(urlconn, SecurityToolkit.checkURLConnectionForSSLTunneling(urlconn));
+
+            assertEquals(1, mocked.constructed().size());
+            verify(urlconn).setSSLSocketFactory(mocked.constructed().get(0));
+        }
     }
 }

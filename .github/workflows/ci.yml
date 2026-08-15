@@ -33,6 +33,9 @@ jobs:
         GH_READ_PKG_USERNAME: ${{ secrets.GH_READ_PKG_USERNAME }}
         GH_READ_PKG_TOKEN: ${{ secrets.GH_READ_PKG_TOKEN }}
 
+    - name: Run mutation tests
+      run: mvn pitest:mutationCoverage
+
     - name: Run JaCoCo code coverage report
       run: mvn org.jacoco:jacoco-maven-plugin:report
 
